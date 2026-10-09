@@ -81,3 +81,6 @@ data/nepse/
 pretrained/
 finetuned/
 outputs/
+
+# Working notes (kept locally, not published)
+plan*.md
