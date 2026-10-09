@@ -228,3 +228,13 @@ Caveats: the delisted series rely on our own adjustments plus gap repair; qualit
 **Robustness** (all features + interest, one setting changed at a time; `outputs/nepse/robust/summary.csv`): 15 of 16 variants beat the fair yardstick, but by +5 to +80 points (typical ≈ +30, i.e. ~1.5–2%/year) — the reference settings sit on the lucky side. Worst drop stayed −19% to −26% in every variant (index −43%). By start year: ahead from 2018, 2019 and 2021; **behind from 2020 (−15 points)**, because the system lags strong booms like 2020–21.
 
 **Verdict:** the reliable benefit is *much smaller crashes* with roughly market-like or modestly better returns; the size of the extra return is uncertain and comes mostly from avoiding the 2018 and 2022 falls and earning interest while out of the market.
+
+### Automatic daily run (macOS)
+
+`scripts/daily_paper_trade.sh` runs the full update + paper portfolio and publishes that day's report to
+`reports/paper/` (`LATEST.md`, one file per trading day, `trades.csv`) in the personal GitHub repo. It is scheduled
+by `~/Library/LaunchAgents/com.sunilaryal.nepse-kronos.daily.plist` for Monday–Friday at 17:00 (Mac local time);
+if the Mac is asleep at 17:00 it runs on wake. Logs: `outputs/nepse/daily.log`.
+
+    launchctl kickstart gui/$(id -u)/com.sunilaryal.nepse-kronos.daily     # run now
+    launchctl bootout gui/$(id -u)/com.sunilaryal.nepse-kronos.daily       # stop the schedule
