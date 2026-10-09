@@ -76,6 +76,7 @@ tmp/
 .python-version
 
 # NEPSE pipeline (local data, weights, outputs)
+.venv311/
 data/nepse/
 pretrained/
 finetuned/
