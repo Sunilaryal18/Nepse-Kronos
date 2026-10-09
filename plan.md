@@ -708,7 +708,7 @@ git commit -m "feat(nepse): fetch public NEPSE daily prices per symbol"
   - `main(argv: list[str] | None = None) -> None`; run as `python -m nepse_kronos.prepare`
   - Output files `data/nepse/clean/<SYMBOL>.csv` with `CANONICAL_COLUMNS`, dates as `YYYY-MM-DD`. The symbol is the raw file name without extension, upper-cased.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/nepse_pipeline/test_prepare.py`:
 ```python
@@ -748,12 +748,12 @@ def test_symbols_filter(tmp_path):
     assert sorted(p.name for p in out_dir.iterdir()) == ["BBB.csv"]
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `python -m pytest tests/nepse_pipeline/test_prepare.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'nepse_kronos.prepare'`
 
-- [ ] **Step 3: Implement `nepse_kronos/prepare.py`**
+- [x] **Step 3: Implement `nepse_kronos/prepare.py`**
 
 ```python
 """Turn raw NEPSE price files into clean CSVs in the canonical Kronos format.
@@ -798,12 +798,12 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `python -m pytest tests/nepse_pipeline/test_prepare.py -v`
 Expected: 2 passed
 
-- [ ] **Step 5: Manual check with real data**
+- [x] **Step 5: Manual check with real data**
 
 Run: `python -m nepse_kronos.prepare --symbols NEPSE_INDEX NABIL`
 Expected: two lines such as `NEPSE_INDEX: 5350 rows, 2003-07-17 -> 2026-10-..` and `NABIL: 34xx rows, 2011-07-17 -> 2026-10-..`. Then check the adjusted stock series has no fake crashes:
@@ -811,7 +811,9 @@ Expected: two lines such as `NEPSE_INDEX: 5350 rows, 2003-07-17 -> 2026-10-..` a
 Run: `python -c "import pandas as pd; c = pd.read_csv('data/nepse/clean/NABIL.csv')['close']; print((c.pct_change() < -0.15).sum())"`
 Expected: `0`
 
-- [ ] **Step 6: Commit**
+> **Done (2026-10-04):** NABIL 3,482 rows (0 drops >15%), NEPSE_INDEX 5,341 rows; all 496 symbols prepared without errors. Health check: 367 symbols traded on 2026-10-02, 291 have ≥400 rows (enough to forecast), 68 have ≥2,670 rows (enough to fine-tune). 51 of 351 active stocks show at least one |daily move| >15% (beyond NEPSE's ±10% limit; e.g. promoter shares, IPO/halt re-openings, possibly missed adjustments) — inspect a stock's history before trusting its backtest.
+
+- [x] **Step 6: Commit**
 
 ```bash
 git add nepse_kronos/prepare.py tests/nepse_pipeline/test_prepare.py
