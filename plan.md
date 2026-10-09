@@ -767,11 +767,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from nepse_kronos.schema import normalize_ohlcv
+from nepse_kronos.schema import normalize_ohlcv, trim_close_only_history
 
 
 def prepare_file(raw_path):
-    return normalize_ohlcv(pd.read_csv(raw_path))
+    return trim_close_only_history(normalize_ohlcv(pd.read_csv(raw_path)))
 
 
 def main(argv=None):
@@ -812,6 +812,8 @@ Run: `python -c "import pandas as pd; c = pd.read_csv('data/nepse/clean/NABIL.cs
 Expected: `0`
 
 > **Done (2026-10-04):** NABIL 3,482 rows (0 drops >15%), NEPSE_INDEX 5,341 rows; all 496 symbols prepared without errors. Health check: 367 symbols traded on 2026-10-02, 291 have ≥400 rows (enough to forecast), 68 have ≥2,670 rows (enough to fine-tune). 51 of 351 active stocks show at least one |daily move| >15% (beyond NEPSE's ±10% limit; e.g. promoter shares, IPO/halt re-openings, possibly missed adjustments) — inspect a stock's history before trusting its backtest.
+
+> **Amended during Task 6:** `prepare` now also calls `schema.trim_close_only_history`, which drops the *leading* run of close-only rows (open = high = low = close). Index data before late 2016 (NEPSE_INDEX: before 2016-11-28) has only closes and zero volume, which made Kronos forecast 30–45% crashes. Stocks are unaffected (no leading flat runs). NEPSE_INDEX is now 2,262 rows from 2016-11-28. Tests: +2 in `test_schema.py`, +1 in `test_prepare.py`.
 
 - [x] **Step 6: Commit**
 
@@ -1028,7 +1030,7 @@ git commit -m "feat(nepse): forecast next NEPSE trading days with Kronos"
 
 **Why:** A forecast is only useful if it beats doing nothing. For each window the backtest hides the next `pred_len` real days, forecasts them, and compares the forecast close on the last day with the real one. `naive_mape` is the error of "price stays at the last close"; Kronos should beat it, and `direction_accuracy` should be above 0.5. Using real future dates from the data means holidays are handled automatically.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/nepse_pipeline/test_backtest.py`:
 ```python
@@ -1078,12 +1080,12 @@ def test_summarize_metrics():
     assert -1.0 <= s["rank_ic"] <= 1.0
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `python -m pytest tests/nepse_pipeline/test_backtest.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'nepse_kronos.backtest'`
 
-- [ ] **Step 3: Implement `nepse_kronos/backtest.py`**
+- [x] **Step 3: Implement `nepse_kronos/backtest.py`**
 
 ```python
 """Walk-forward backtest of Kronos forecasts on one NEPSE symbol.
@@ -1144,7 +1146,7 @@ def summarize(results):
         "direction_accuracy": float((np.sign(results["pred_return"]) == np.sign(results["actual_return"])).mean()),
         "mape": float(((results["pred_close"] - actual).abs() / actual).mean()),
         "naive_mape": float(((results["last_close"] - actual).abs() / actual).mean()),
-        "rank_ic": float(results["pred_return"].corr(results["actual_return"], method="spearman")),
+        "rank_ic": float(results["pred_return"].rank().corr(results["actual_return"].rank())),  # Spearman without scipy
     }
 
 
@@ -1179,17 +1181,26 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `python -m pytest tests/nepse_pipeline/test_backtest.py -v`
 Expected: 4 passed
 
-- [ ] **Step 5: Manual baseline run with the pretrained model**
+- [x] **Step 5: Manual baseline run with the pretrained model**
 
 Run: `python -m nepse_kronos.backtest --symbol NEPSE_INDEX --pred-len 5 --step 10`
 Expected: prints `windows`, `direction_accuracy`, `mape`, `naive_mape`, `rank_ic`. On CPU this takes several minutes (one forecast per window). **Write these numbers down** — they are the baseline that fine-tuning (Task 7) must beat. A useful model has `mape < naive_mape` and `direction_accuracy > 0.5`.
 
-- [ ] **Step 6: Commit**
+> **Done (2026-10-04) — baseline for Task 7 to beat (NEPSE_INDEX, Kronos-small, pred_len 5, step 10, sample_count 5):**
+>
+> | lookback | windows | direction_accuracy | mape | naive_mape | rank_ic |
+> |---|---|---|---|---|---|
+> | 400 | 186 | 0.4785 | 0.0497 | 0.0243 | -0.0936 |
+> | 128 | 213 | 0.4460 | 0.0317 | 0.0249 | -0.0765 |
+>
+> Zero-shot Kronos-small shows **no skill** on the index: error above the no-change baseline, direction and IC statistically indistinguishable from chance (±0.035 / ±0.07 at ~200 windows). The first run (before trimming close-only history) was much worse (mape 0.080 vs 0.025) — see the note in Task 4. `rank_ic` is computed as the correlation of ranks (Spearman) so no `scipy` dependency is needed.
+
+- [x] **Step 6: Commit**
 
 ```bash
 git add nepse_kronos/backtest.py tests/nepse_pipeline/test_backtest.py
@@ -1231,7 +1242,7 @@ Paths are relative to `finetune_csv/`, because training is run from that directo
 
 data:
   data_path: "../data/nepse/clean/NEPSE_INDEX.csv"
-  lookback_window: 256
+  lookback_window: 128   # NEPSE_INDEX has ~2,260 real-candle rows; 128 also scored best zero-shot (Task 6)
   predict_window: 10
   max_context: 512
   clip: 5.0
@@ -1290,7 +1301,7 @@ device:
 Each training sample needs `lookback_window + predict_window + 1 = 267` rows, and the validation split (10%) must also hold at least one sample, so the CSV needs **≥ 2,670 rows** (~11 years of daily data). For a shorter series lower `lookback_window` to 128 (needs ≥ 1,390 rows).
 
 Run: `python -c "import pandas as pd; print(len(pd.read_csv('data/nepse/clean/NEPSE_INDEX.csv')))"`
-Expected: a number ≥ 2670 (or lower the lookback as above).
+Expected: a number ≥ 1390 for the config's lookback of 128 (NEPSE_INDEX: 2,262).
 
 - [ ] **Step 4: Train**
 
@@ -1310,8 +1321,8 @@ Expected: a date, e.g. `2025-05-14`. Use it as `HOLDOUT` below.
 - [ ] **Step 6: Compare pretrained vs fine-tuned on the held-out period**
 
 ```bash
-python -m nepse_kronos.backtest --symbol NEPSE_INDEX --pred-len 5 --step 5 --lookback 256 --start-date HOLDOUT
-python -m nepse_kronos.backtest --symbol NEPSE_INDEX --pred-len 5 --step 5 --lookback 256 --start-date HOLDOUT \
+python -m nepse_kronos.backtest --symbol NEPSE_INDEX --pred-len 5 --step 5 --lookback 128 --start-date HOLDOUT
+python -m nepse_kronos.backtest --symbol NEPSE_INDEX --pred-len 5 --step 5 --lookback 128 --start-date HOLDOUT \
     --model finetuned/NEPSE_daily/basemodel/best_model \
     --tokenizer finetuned/NEPSE_daily/tokenizer/best_model
 ```
@@ -1391,7 +1402,7 @@ Forecasts are probabilistic research output, not investment advice.
 - [ ] **Step 2: Run the full NEPSE test suite**
 
 Run: `python -m pytest tests/nepse_pipeline -v`
-Expected: 25 passed
+Expected: 28 passed
 
 - [ ] **Step 3: Commit**
 

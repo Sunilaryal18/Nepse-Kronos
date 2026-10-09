@@ -52,3 +52,16 @@ def normalize_ohlcv(raw):
 
     df = df.drop_duplicates("timestamps", keep="last").sort_values("timestamps").reset_index(drop=True)
     return df[CANONICAL_COLUMNS].astype({c: float for c in CANONICAL_COLUMNS[1:]})
+
+
+def trim_close_only_history(df):
+    """Drop the leading stretch of close-only rows (open == high == low == close).
+
+    Old NEPSE index data (before late 2016) records only the close, and Kronos was trained on real
+    candles; windows built from such rows produce wild forecasts. Later flat rows are genuine
+    thin-trading days and are kept.
+    """
+    real = ~df[PRICE_COLUMNS].eq(df["close"], axis=0).all(axis=1)
+    if not real.any():
+        return df
+    return df.loc[real.idxmax():].reset_index(drop=True)

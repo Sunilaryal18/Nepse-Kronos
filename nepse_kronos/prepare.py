@@ -9,11 +9,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from nepse_kronos.schema import normalize_ohlcv
+from nepse_kronos.schema import normalize_ohlcv, trim_close_only_history
 
 
 def prepare_file(raw_path):
-    return normalize_ohlcv(pd.read_csv(raw_path))
+    return trim_close_only_history(normalize_ohlcv(pd.read_csv(raw_path)))
 
 
 def main(argv=None):

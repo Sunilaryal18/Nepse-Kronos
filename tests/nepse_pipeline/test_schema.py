@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from nepse_kronos.schema import CANONICAL_COLUMNS, normalize_ohlcv
+from nepse_kronos.schema import CANONICAL_COLUMNS, normalize_ohlcv, trim_close_only_history
 
 
 def test_maps_site_specific_column_names_and_parses_commas():
@@ -60,3 +60,22 @@ def test_repairs_high_low_that_do_not_contain_open_close():
     df = normalize_ohlcv(raw)
     assert df.loc[0, "high"] == 11.0
     assert df.loc[0, "low"] == 9.8
+
+
+def test_trim_close_only_history_drops_leading_flat_candles_only():
+    df = normalize_ohlcv(pd.DataFrame({
+        "date": ["2016-11-24", "2016-11-25", "2016-11-28", "2016-11-29", "2016-11-30"],
+        "open": [10, 11, 12, 13, 14],
+        "high": [10, 11, 12.5, 13, 14.5],
+        "low": [10, 11, 11.8, 13, 13.9],
+        "close": [10, 11, 12.2, 13, 14.1],
+    }))
+    out = trim_close_only_history(df)
+    # the two leading close-only rows go; the later flat row (2016-11-29) is a real thin-trading day and stays
+    assert out["timestamps"].dt.strftime("%Y-%m-%d").tolist() == ["2016-11-28", "2016-11-29", "2016-11-30"]
+
+
+def test_trim_close_only_history_keeps_series_without_real_candles():
+    df = normalize_ohlcv(pd.DataFrame({"date": ["2024-01-01", "2024-01-02"], "open": [1, 2],
+                                       "high": [1, 2], "low": [1, 2], "close": [1, 2]}))
+    assert len(trim_close_only_history(df)) == 2

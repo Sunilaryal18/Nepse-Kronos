@@ -32,3 +32,17 @@ def test_symbols_filter(tmp_path):
     main(["--raw-dir", str(raw_dir), "--out-dir", str(out_dir), "--symbols", "bbb"])
 
     assert sorted(p.name for p in out_dir.iterdir()) == ["BBB.csv"]
+
+
+def test_main_trims_close_only_history(tmp_path):
+    raw_dir, out_dir = tmp_path / "raw", tmp_path / "clean"
+    raw_dir.mkdir()
+    (raw_dir / "IDX_INDEX.csv").write_text(
+        "timestamps,open,high,low,close,volume\n"
+        "2016-11-24,10,10,10,10,\n"
+        "2016-11-28,12,12.5,11.8,12.2,500\n"
+    )
+
+    main(["--raw-dir", str(raw_dir), "--out-dir", str(out_dir)])
+
+    assert pd.read_csv(out_dir / "IDX_INDEX.csv")["timestamps"].tolist() == ["2016-11-28"]
