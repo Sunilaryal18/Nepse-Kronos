@@ -1222,7 +1222,7 @@ git commit -m "feat(nepse): walk-forward backtest with naive baseline"
 
 `train_sequential.py` reads `config.json` from the pretrained tokenizer **directory**, so weights must be downloaded locally first (a Hugging Face name alone is not enough).
 
-- [ ] **Step 1: Download pretrained weights locally**
+- [x] **Step 1: Download pretrained weights locally**
 
 ```bash
 python -c "
@@ -1233,7 +1233,7 @@ get('NeoQuasar/Kronos-small', local_dir='pretrained/Kronos-small')
 ```
 Expected: `pretrained/Kronos-Tokenizer-base/config.json` and `pretrained/Kronos-small/config.json` exist.
 
-- [ ] **Step 2: Create `finetune_csv/configs/config_nepse_daily.yaml`**
+- [x] **Step 2: Create `finetune_csv/configs/config_nepse_daily.yaml`**
 
 Paths are relative to `finetune_csv/`, because training is run from that directory.
 ```yaml
@@ -1296,14 +1296,14 @@ device:
   device_id: 0
 ```
 
-- [ ] **Step 3: Check the series is long enough**
+- [x] **Step 3: Check the series is long enough**
 
 Each training sample needs `lookback_window + predict_window + 1 = 267` rows, and the validation split (10%) must also hold at least one sample, so the CSV needs **≥ 2,670 rows** (~11 years of daily data). For a shorter series lower `lookback_window` to 128 (needs ≥ 1,390 rows).
 
 Run: `python -c "import pandas as pd; print(len(pd.read_csv('data/nepse/clean/NEPSE_INDEX.csv')))"`
 Expected: a number ≥ 1390 for the config's lookback of 128 (NEPSE_INDEX: 2,262).
 
-- [ ] **Step 4: Train**
+- [x] **Step 4: Train**
 
 On a machine with an NVIDIA GPU (or Google Colab with the repo cloned and `data/nepse/clean/`, `pretrained/` copied over):
 ```bash
@@ -1313,12 +1313,12 @@ cd ..
 ```
 Expected: tokenizer then basemodel training logs; validation loss printed each epoch; final checkpoints at `finetuned/NEPSE_daily/tokenizer/best_model/` and `finetuned/NEPSE_daily/basemodel/best_model/`. CPU-only training of a single daily series is possible but slow (hours).
 
-- [ ] **Step 5: Find the start of the held-out period**
+- [x] **Step 5: Find the start of the held-out period**
 
 Run: `python -c "import pandas as pd; df = pd.read_csv('data/nepse/clean/NEPSE_INDEX.csv'); print(df['timestamps'].iloc[int(len(df) * 0.9)])"`
 Expected: a date, e.g. `2025-05-14`. Use it as `HOLDOUT` below.
 
-- [ ] **Step 6: Compare pretrained vs fine-tuned on the held-out period**
+- [x] **Step 6: Compare pretrained vs fine-tuned on the held-out period**
 
 ```bash
 python -m nepse_kronos.backtest --symbol NEPSE_INDEX --pred-len 5 --step 5 --lookback 128 --start-date HOLDOUT
@@ -1328,7 +1328,17 @@ python -m nepse_kronos.backtest --symbol NEPSE_INDEX --pred-len 5 --step 5 --loo
 ```
 Expected: two metric tables over the same windows. Keep the fine-tuned model only if its `mape` is lower and `direction_accuracy` higher than the pretrained one. If it is worse, it is over-fitting: halve `basemodel_epochs` and retrain.
 
-- [ ] **Step 7: Commit**
+> **Done (2026-10-04):** trained on CPU (Mac, no CUDA) in **34.7 min** — tokenizer best val loss 0.0097 (epoch 5 of 20), predictor val loss 3.645 → 3.529, still improving slowly at epoch 10 (no over-fitting, so the "halve epochs" advice does not apply). Held-out period starts **2025-10-13** (44 non-overlapping 5-day windows, lookback 128). Each model was backtested 4 times because sampling noise is large:
+>
+> | mean of 4 runs (range) | pretrained Kronos-small | fine-tuned | naive |
+> |---|---|---|---|
+> | mape | 0.0193 (0.0179–0.0205) | 0.0208 (0.0194–0.0219) | **0.0179** |
+> | direction_accuracy | 0.540 (0.45–0.68) | 0.568 (0.50–0.61) | 0.5 |
+> | rank_ic | 0.21 (0.13–0.32) | 0.29 (0.20–0.38) | 0 |
+>
+> **Verdict:** run-to-run spread is larger than the gap between models, and fine-tuned mape is slightly worse, so by this task's rule the fine-tuned model is **not adopted**. Neither model beats the no-change baseline on error. Positive IC on the held-out year contrasts with negative IC over 2017–2026 (Task 6), so treat it as unconfirmed.
+
+- [x] **Step 7: Commit**
 
 ```bash
 git add finetune_csv/configs/config_nepse_daily.yaml

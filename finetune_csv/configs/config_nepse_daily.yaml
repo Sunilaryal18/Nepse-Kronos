@@ -1,0 +1,57 @@
+# Fine-tune Kronos on one daily NEPSE series (index or stock).
+# Run from finetune_csv/:  python train_sequential.py --config configs/config_nepse_daily.yaml
+
+data:
+  data_path: "../data/nepse/clean/NEPSE_INDEX.csv"
+  lookback_window: 128   # NEPSE_INDEX has ~2,260 real-candle rows; 128 also scored best zero-shot (Task 6)
+  predict_window: 10
+  max_context: 512
+  clip: 5.0
+  # time-ordered split; the last 10% is held out for the backtest
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
+
+training:
+  tokenizer_epochs: 20
+  basemodel_epochs: 10
+  batch_size: 16
+  log_interval: 50
+  num_workers: 2
+  seed: 42
+
+  tokenizer_learning_rate: 0.0002
+  predictor_learning_rate: 0.000001
+
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_weight_decay: 0.1
+
+  accumulation_steps: 1
+
+model_paths:
+  pretrained_tokenizer: "../pretrained/Kronos-Tokenizer-base"
+  pretrained_predictor: "../pretrained/Kronos-small"
+
+  exp_name: "NEPSE_daily"
+  base_path: "../finetuned/"
+
+  base_save_path: ""
+  finetuned_tokenizer: ""
+
+  tokenizer_save_name: "tokenizer"
+  basemodel_save_name: "basemodel"
+
+experiment:
+  name: "kronos_nepse_daily"
+  description: "Kronos fine-tuned on NEPSE daily candles"
+  use_comet: false
+
+  train_tokenizer: true
+  train_basemodel: true
+
+  skip_existing: false
+
+device:
+  use_cuda: true   # falls back to CPU when no CUDA GPU is present
+  device_id: 0
