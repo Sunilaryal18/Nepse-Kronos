@@ -139,7 +139,7 @@ git commit -m "chore: ignore local NEPSE data, weights and outputs"
 
 Raw exports from different Nepali sites name columns differently (`Date`, `LTP`, `Total Traded Quantity`, `Turnover`, ...) and often format numbers as `"1,234.50"`. This task maps all of them onto one schema.
 
-- [ ] **Step 1: Create the package marker and shared test fixtures**
+- [x] **Step 1: Create the package marker and shared test fixtures**
 
 `nepse_kronos/__init__.py`:
 ```python
@@ -191,7 +191,7 @@ def stub_predictor():
     return StubPredictor()
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `tests/nepse_pipeline/test_schema.py`:
 ```python
@@ -259,12 +259,12 @@ def test_repairs_high_low_that_do_not_contain_open_close():
     assert df.loc[0, "low"] == 9.8
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `python -m pytest tests/nepse_pipeline/test_schema.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'nepse_kronos.schema'`
 
-- [ ] **Step 4: Implement `nepse_kronos/schema.py`**
+- [x] **Step 4: Implement `nepse_kronos/schema.py`**
 
 ```python
 import pandas as pd
@@ -323,12 +323,12 @@ def normalize_ohlcv(raw):
     return df[CANONICAL_COLUMNS].astype({c: float for c in CANONICAL_COLUMNS[1:]})
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `python -m pytest tests/nepse_pipeline/test_schema.py -v`
 Expected: 6 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add nepse_kronos/__init__.py nepse_kronos/schema.py tests/nepse_pipeline/
