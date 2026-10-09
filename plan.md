@@ -476,7 +476,7 @@ git commit -m "feat(nepse): Mon-Fri trading calendar with holiday list"
 - Data-quality issue: two files in the *unadjusted* folder (`unadj_2025-07-07.csv`, `unadj_2025-07-08.csv`) contain unresolved git merge-conflict markers. The reader must survive such lines in any folder: rows whose `date` does not parse are dropped, and for duplicated (symbol, date) rows the last one wins.
 - Stock files have no turnover column; `amount` is estimated later by `normalize_ohlcv` as volume × mean price.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/nepse_pipeline/test_fetch.py`:
 ```python
@@ -566,12 +566,12 @@ def test_main_symbols_filter(tmp_path):
     assert sorted(p.name for p in out.iterdir()) == ["NEPSE_INDEX.csv"]
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `python -m pytest tests/nepse_pipeline/test_fetch.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'nepse_kronos.fetch'`
 
-- [ ] **Step 3: Implement `nepse_kronos/fetch.py`**
+- [x] **Step 3: Implement `nepse_kronos/fetch.py`**
 
 ```python
 """Download public NEPSE daily prices and split them into one CSV per symbol.
@@ -672,19 +672,21 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `python -m pytest tests/nepse_pipeline/test_fetch.py -v`
 Expected: 5 passed
 
-- [ ] **Step 5: Manual check against the real dataset**
+- [x] **Step 5: Manual check against the real dataset**
 
 Run: `python -m nepse_kronos.fetch`
 Expected: first run clones ~110 MB into `data/nepse/source/nepse-open-data` (later runs only fetch new commits), then prints `Wrote ~370 symbol files to data/nepse/raw (data up to 2026-10-..)`.
+
+> **Done (2026-10-04):** wrote 496 files (17 indices + 479 stocks incl. delisted), data up to 2026-10-02; `NEPSE_INDEX` = 5,341 rows from 2003-07-17, last close 2,587.25. Note: in the index files `volume` is actually **turnover in NPR** (~4.3 billion/day), not shares; harmless for Kronos (each series is normalized) but don't compare index and stock volumes.
 Then: `head -3 data/nepse/raw/NEPSE_INDEX.csv && tail -2 data/nepse/raw/NEPSE_INDEX.csv`
 Expected: starts in 2003-07, ends on the latest trading day with a close around 2,500–2,700.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add nepse_kronos/fetch.py tests/nepse_pipeline/test_fetch.py
