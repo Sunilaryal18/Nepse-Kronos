@@ -1,0 +1,37 @@
+{
+ "draw": 1,
+ "recordsTotal": 47,
+ "recordsFiltered": 47,
+ "data": [
+  {
+   "symbol": "<a href='https://www.sharesansar.com/company/sabbl'>SABBL</a>",
+   "companyname": "<a href='https://www.sharesansar.com/company/sabbl'>Salapa Bikas Bank Limited</a>",
+   "shares": "5,223,880.00",
+   "prom_share": "3,500,000.00",
+   "public_share": "1,723,880.00",
+   "allot_date": "2026-01-09",
+   "mf_lock_date": "2026-07-08",
+   "prom_lock_date": "2029-01-09",
+   "ltp": "840.00",
+   "date": "2026-10-02",
+   "prom_share_per": " (67.00%)",
+   "public_share_per": " (33.00%)",
+   "DT_Row_Index": 1
+  },
+  {
+   "symbol": "<a href='https://www.sharesansar.com/company/tpkhl'>TPKHL</a>",
+   "companyname": "<a href='https://www.sharesansar.com/company/tpkhl'>Taksar Pikhuwa Khola Hydropower Limited</a>",
+   "shares": "12,000,000.00",
+   "prom_share": "7,769,340.00",
+   "public_share": "4,230,660.00",
+   "allot_date": "2026-05-20",
+   "mf_lock_date": "2026-11-20",
+   "prom_lock_date": "2029-05-20",
+   "ltp": "490.00",
+   "date": "2026-10-02",
+   "prom_share_per": " (64.74%)",
+   "public_share_per": " (35.26%)",
+   "DT_Row_Index": 2
+  }
+ ]
+}

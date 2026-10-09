@@ -1,0 +1,34 @@
+{
+ "draw": 1,
+ "recordsTotal": 268,
+ "recordsFiltered": 268,
+ "data": [
+  {
+   "companyid": 1352,
+   "ratio_value": null,
+   "total_units": "863200.00",
+   "issue_price": "100.00",
+   "opening_date": "2026-09-07",
+   "closing_date": "2026-09-11",
+   "final_date": "2026-09-21",
+   "right_eligibility_link": null,
+   "announcement_link": "https://www.sharesansar.com/announcementdetail/beni-hydropower-project-limited-has-published-an-offer-letter-to-issue-863200-units-ipo-shares-to-the-general-public-from-22nd-bhadra-to-25th-bhadra-2083-2026-08-25",
+   "issue_manager": "NMB Capital Limited",
+   "listing_date": "",
+   "issue_prrng_low": null,
+   "issue_prrng_high": null,
+   "cutoff_price": null,
+   "displayable_share_type": "Others",
+   "company": {
+    "id": 1352,
+    "symbol": "<a href='https://www.sharesansar.com/company/beni'>BENI</a>",
+    "companyname": "<a href='https://www.sharesansar.com/company/beni'>Beni Hydropower Project Limited</a>"
+   },
+   "price_range": " to ",
+   "status": 1,
+   "bkstatus": 0,
+   "view": "<a href='https://www.sharesansar.com/announcementdetail/beni-hydropower-project-limited-has-published-an-offer-letter-to-issue-863200-units-ipo-shares-to-the-general-public-from-22nd-bhadra-to-25th-bhadra-2083-2026-08-25' target='_blank'><i class='fa fa-file' aria-hidden='true'></i><a>",
+   "DT_Row_Index": 1
+  }
+ ]
+}

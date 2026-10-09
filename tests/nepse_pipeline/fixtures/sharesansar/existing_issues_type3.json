@@ -1,0 +1,61 @@
+{
+ "draw": 1,
+ "recordsTotal": 323,
+ "recordsFiltered": 323,
+ "data": [
+  {
+   "companyid": 961,
+   "ratio_value": "1:1",
+   "total_units": "5750000.00",
+   "issue_price": "100.00",
+   "opening_date": "",
+   "closing_date": "",
+   "final_date": "",
+   "right_eligibility_link": null,
+   "announcement_link": null,
+   "issue_manager": null,
+   "listing_date": "",
+   "issue_prrng_low": null,
+   "issue_prrng_high": null,
+   "cutoff_price": null,
+   "displayable_share_type": "Others",
+   "company": {
+    "id": 961,
+    "symbol": "<a href='https://www.sharesansar.com/company/uhewa'>UHEWA</a>",
+    "companyname": "<a href='https://www.sharesansar.com/company/uhewa'>Upper Hewakhola Hydropower Company Limited</a>"
+   },
+   "price_range": " to ",
+   "status": -2,
+   "bkstatus": -2,
+   "view": "<i class=\"fa fa-times\" aria-hidden=\"true\"></i>",
+   "DT_Row_Index": 1
+  },
+  {
+   "companyid": 537,
+   "ratio_value": "1:0.56621279",
+   "total_units": "11938714.58",
+   "issue_price": "100.00",
+   "opening_date": "",
+   "closing_date": "",
+   "final_date": "",
+   "right_eligibility_link": "https://www.nicasiacapital.com/bonus-share",
+   "announcement_link": null,
+   "issue_manager": "NIC Asia Capital Limited",
+   "listing_date": "",
+   "issue_prrng_low": null,
+   "issue_prrng_high": null,
+   "cutoff_price": null,
+   "displayable_share_type": "Others",
+   "company": {
+    "id": 537,
+    "symbol": "<a href='https://www.sharesansar.com/company/dordi'>DORDI</a>",
+    "companyname": "<a href='https://www.sharesansar.com/company/dordi'>Dordi Khola Hydropower Company Limited</a>"
+   },
+   "price_range": " to ",
+   "status": -2,
+   "bkstatus": -2,
+   "view": "<i class=\"fa fa-times\" aria-hidden=\"true\"></i>",
+   "DT_Row_Index": 2
+  }
+ ]
+}

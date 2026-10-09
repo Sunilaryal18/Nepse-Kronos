@@ -1,0 +1,55 @@
+{
+ "draw": 1,
+ "recordsTotal": 19,
+ "recordsFiltered": 19,
+ "data": [
+  {
+   "symbol": "<a title='NMB Bank Limited' href='https://www.sharesansar.com/company/nmb'>NMB</a>",
+   "companyname": "<a href='https://www.sharesansar.com/company/nmb'>NMB Bank Limited</a>",
+   "shares": "192,850,413.00",
+   "paidup": "100.00",
+   "listing_date": "2018-08-22",
+   "prom_share": "98,353,711.00",
+   "public_share": "94,496,702.00",
+   "paidupcap": "19,285,041,300.00",
+   "marketcap": "48,791,154,489.00",
+   "ltp": "253.00",
+   "date": "2026-10-02",
+   "prom_share_per": " (51.00%)",
+   "public_share_per": " (49.00%)",
+   "DT_Row_Index": 1
+  },
+  {
+   "symbol": "<a title='Siddhartha Bank Limited' href='https://www.sharesansar.com/company/sbl'>SBL</a>",
+   "companyname": "<a href='https://www.sharesansar.com/company/sbl'>Siddhartha Bank Limited</a>",
+   "shares": "162,739,271.00",
+   "paidup": "100.00",
+   "listing_date": "2016-07-11",
+   "prom_share": "82,997,028.00",
+   "public_share": "79,742,243.00",
+   "paidupcap": "16,273,927,100.00",
+   "marketcap": "66,397,622,568.00",
+   "ltp": "408.00",
+   "date": "2026-10-02",
+   "prom_share_per": " (51.00%)",
+   "public_share_per": " (49.00%)",
+   "DT_Row_Index": 2
+  },
+  {
+   "symbol": "<a title='Kumari Bank Limited' href='https://www.sharesansar.com/company/kbl'>KBL</a>",
+   "companyname": "<a href='https://www.sharesansar.com/company/kbl'>Kumari Bank Limited</a>",
+   "shares": "262,258,613.00",
+   "paidup": "100.00",
+   "listing_date": "2017-09-06",
+   "prom_share": "134,053,321.00",
+   "public_share": "128,205,292.00",
+   "paidupcap": "26,225,861,300.00",
+   "marketcap": "59,139,317,231.50",
+   "ltp": "225.50",
+   "date": "2026-10-02",
+   "prom_share_per": " (51.11%)",
+   "public_share_per": " (48.89%)",
+   "DT_Row_Index": 3
+  }
+ ]
+}

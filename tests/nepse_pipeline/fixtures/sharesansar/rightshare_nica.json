@@ -1,0 +1,39 @@
+{
+ "draw": 1,
+ "recordsTotal": 2,
+ "recordsFiltered": 2,
+ "data": [
+  {
+   "ratio_value": "100:15",
+   "total_units": "8729475.00",
+   "issue_price": "100.00",
+   "opening_date": "2017-03-28",
+   "closing_date": "2017-05-01",
+   "final_date": "2017-03-20",
+   "listing_date": "",
+   "announcement_link": "http://www.sharesansar.com/announcement/nic-asia-bank-limited-is-issuing-its-101-5-ratio-8729475-units-right-share-to-its-shareholders-from-16th-chaitra-2073-to-19th-baisakh-2074/",
+   "issue_manager": "Civil Capital Markets Ltd.",
+   "displayable_share_type": "Others",
+   "status": 1,
+   "bkstatus": 0,
+   "view": "<a href='http://www.sharesansar.com/announcement/nic-asia-bank-limited-is-issuing-its-101-5-ratio-8729475-units-right-share-to-its-shareholders-from-16th-chaitra-2073-to-19th-baisakh-2074/' target='_blank'><i class='fa fa-file' aria-hidden='true'></i><a>",
+   "DT_Row_Index": 1
+  },
+  {
+   "ratio_value": "4:1",
+   "total_units": "9237540.00",
+   "issue_price": "100.00",
+   "opening_date": "2016-05-25",
+   "closing_date": "2016-06-28",
+   "final_date": "2016-05-13",
+   "listing_date": "",
+   "announcement_link": null,
+   "issue_manager": "Civil Capital Market Ltd.",
+   "displayable_share_type": "Others",
+   "status": 1,
+   "bkstatus": 0,
+   "view": "<i class=\"fa fa-times\" aria-hidden=\"true\"></i>",
+   "DT_Row_Index": 2
+  }
+ ]
+}

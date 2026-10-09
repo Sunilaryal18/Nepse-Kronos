@@ -1,0 +1,5 @@
+# Extra packages for the NEPSE pipeline (nepse_kronos), on top of requirements.txt
+pytest
+pyyaml
+openpyxl==3.1.5
+nepse @ git+https://github.com/basic-bgnr/NepseUnofficialApi@180a550

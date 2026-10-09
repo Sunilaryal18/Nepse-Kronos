@@ -1,0 +1,62 @@
+[
+ {
+  "id": 131,
+  "companyName": "Nabil Bank Limited",
+  "symbol": "NABIL",
+  "securityName": "Nabil Bank Limited",
+  "status": "A",
+  "companyEmail": "company.affairs@nabilbank.com",
+  "website": "www.nabilbank.com",
+  "sectorName": "Commercial Banks",
+  "regulatoryBody": "Nepal Rastra Bank",
+  "instrumentType": "Equity"
+ },
+ {
+  "id": 139,
+  "companyName": "NIC Asia Bank Ltd.",
+  "symbol": "NICA",
+  "securityName": "NIC Asia Bank Ltd.",
+  "status": "A",
+  "companyEmail": "nica.nots@nicasiabank.com",
+  "website": "www.nicasiabank.com",
+  "sectorName": "Commercial Banks",
+  "regulatoryBody": "Nepal Rastra Bank",
+  "instrumentType": "Equity"
+ },
+ {
+  "id": 269,
+  "companyName": "NIDC Capital Markets Ltd.",
+  "symbol": "NCMMF",
+  "securityName": "NCM Mutual Fund",
+  "status": "D",
+  "companyEmail": "info@ncml.com.np",
+  "website": "http://www.ncml.com.np",
+  "sectorName": "Finance",
+  "regulatoryBody": "Nepal Rastra Bank",
+  "instrumentType": "Mutual Funds"
+ },
+ {
+  "id": 2825,
+  "companyName": "NIC Asia Bank Ltd.",
+  "symbol": "NICAD85/86",
+  "securityName": "10% NIC Asia Debenture 2085/86",
+  "status": "A",
+  "companyEmail": "nica.nots@nicasiabank.com",
+  "website": "www.nicasiabank.com",
+  "sectorName": "Commercial Banks",
+  "regulatoryBody": "Nepal Rastra Bank",
+  "instrumentType": "Non-Convertible Debentures"
+ },
+ {
+  "id": 136,
+  "companyName": "Nepal Bangladesh Bank Limited",
+  "symbol": "NBB",
+  "securityName": "Nepal Bangladesh Bank Limited",
+  "status": "D",
+  "companyEmail": "bishwapoudel@nbbl.com.np",
+  "website": "",
+  "sectorName": "Commercial Banks",
+  "regulatoryBody": "Nepal Rastra Bank",
+  "instrumentType": "Equity"
+ }
+]

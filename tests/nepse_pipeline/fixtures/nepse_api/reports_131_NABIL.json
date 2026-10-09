@@ -1,0 +1,289 @@
+[
+ {
+  "id": 46727,
+  "activeStatus": "A",
+  "applicationType": 111,
+  "applicationStatus": 3,
+  "companyNews": null,
+  "fiscalReport": {
+   "id": 6835,
+   "activeStatus": "A",
+   "quarterMaster": {
+    "id": 4,
+    "activeStatus": "A",
+    "quarterName": "Fourth Quarter",
+    "versionId": 0
+   },
+   "reportTypeMaster": {
+    "id": 2,
+    "activeStatus": "A",
+    "reportName": "Quarterly Report",
+    "versionId": 0
+   },
+   "financialYear": {
+    "id": 41,
+    "activeStatus": "A",
+    "fyName": "2025-2026",
+    "fromYear": "2025-07-17",
+    "toYear": "2026-07-16",
+    "fyNameNepali": "2082-2083"
+   },
+   "peValue": 18.86,
+   "epsValue": 28.36,
+   "paidUpCapital": 27056996729.0,
+   "profitAmount": 7905796000.0,
+   "netWorthPerShare": 247.28,
+   "remarks": null
+  },
+  "applicationDocumentDetailsList": [
+   {
+    "id": 31992,
+    "activeStatus": "A",
+    "application": 46727,
+    "documentType": 54,
+    "submittedDate": "2026-08-06",
+    "filePath": "nabil_user/2026-08-06/Nabil Bank Limited 4th Quarter Unaudited Financial Result (2082-83)_1785988036733.pdf",
+    "encryptedId": "3046de73d0bc84a0c5629db10aa394dd72e88a33c5f30b7009bf468eccd1fdc4c6374fa58c79969272e8853d644854e5feea2c115f94e59b5ded3bb42a3480dc"
+   }
+  ]
+ },
+ {
+  "id": 45885,
+  "activeStatus": "A",
+  "applicationType": 111,
+  "applicationStatus": 3,
+  "companyNews": null,
+  "fiscalReport": {
+   "id": 6779,
+   "activeStatus": "A",
+   "quarterMaster": null,
+   "reportTypeMaster": {
+    "id": 1,
+    "activeStatus": "A",
+    "reportName": "Annual Report",
+    "versionId": 0
+   },
+   "financialYear": {
+    "id": 40,
+    "activeStatus": "A",
+    "fyName": "2024-2025",
+    "fromYear": "2024-07-16",
+    "toYear": "2025-07-16",
+    "fyNameNepali": "2081-2082"
+   },
+   "peValue": 24.73,
+   "epsValue": 21.89,
+   "paidUpCapital": 27056996729.0,
+   "profitAmount": 5922144047.0,
+   "netWorthPerShare": 231.0,
+   "remarks": null
+  },
+  "applicationDocumentDetailsList": [
+   {
+    "id": 31028,
+    "activeStatus": "A",
+    "application": 45885,
+    "documentType": 54,
+    "submittedDate": "2026-05-18",
+    "filePath": "nabil_user/2026-05-18/Annual Report 2081-82 (Nepali)_compressed_1779105539498.pdf",
+    "encryptedId": "2d029ea322dc759f5b881341f456d0f98372f9e0d2828e96334c888b9153856aef54df9659a0282437655c8f5dcf4fa6b9ee921cae82bec1208495bd1cfe2a47"
+   }
+  ]
+ },
+ {
+  "id": 45514,
+  "activeStatus": "A",
+  "applicationType": 111,
+  "applicationStatus": 3,
+  "companyNews": null,
+  "fiscalReport": {
+   "id": 6528,
+   "activeStatus": "A",
+   "quarterMaster": {
+    "id": 3,
+    "activeStatus": "A",
+    "quarterName": "Third Quarter",
+    "versionId": 0
+   },
+   "reportTypeMaster": {
+    "id": 2,
+    "activeStatus": "A",
+    "reportName": "Quarterly Report",
+    "versionId": 0
+   },
+   "financialYear": {
+    "id": 41,
+    "activeStatus": "A",
+    "fyName": "2025-2026",
+    "fromYear": "2025-07-17",
+    "toYear": "2026-07-16",
+    "fyNameNepali": "2082-2083"
+   },
+   "peValue": 16.05,
+   "epsValue": 33.02,
+   "paidUpCapital": 27056996729.0,
+   "profitAmount": 6764646000.0,
+   "netWorthPerShare": 243.3,
+   "remarks": null
+  },
+  "applicationDocumentDetailsList": [
+   {
+    "id": 30593,
+    "activeStatus": "A",
+    "application": 45514,
+    "documentType": 54,
+    "submittedDate": "2026-04-28",
+    "filePath": "nabil_user/2026-04-28/Nabil Bank Q3 Unaudited Financial(2082-83)_1777350465184.pdf",
+    "encryptedId": "5b144e4568b0835e8684df1473f0e71f1ea95253049cef3d22afa8191464ef6f852d68d28c2aa22bf78979a268feb4f804c6cc559a8b95d4d4b3c93731eee5dc"
+   }
+  ]
+ },
+ {
+  "id": 38110,
+  "activeStatus": "A",
+  "applicationType": 111,
+  "applicationStatus": 3,
+  "companyNews": null,
+  "fiscalReport": {
+   "id": 4764,
+   "activeStatus": "A",
+   "quarterMaster": null,
+   "reportTypeMaster": {
+    "id": 1,
+    "activeStatus": "A",
+    "reportName": "Annual Report",
+    "versionId": 0
+   },
+   "financialYear": {
+    "id": 39,
+    "activeStatus": "A",
+    "fyName": "2023-2024",
+    "fromYear": "2023-07-17",
+    "toYear": "2024-07-15",
+    "fyNameNepali": "2080-2081"
+   },
+   "peValue": 22.88,
+   "epsValue": 22.9,
+   "paidUpCapital": 27056996729.0,
+   "profitAmount": 6197108561.0,
+   "netWorthPerShare": 216.86,
+   "remarks": null
+  },
+  "applicationDocumentDetailsList": [
+   {
+    "id": 22987,
+    "activeStatus": "A",
+    "application": 38110,
+    "documentType": 54,
+    "submittedDate": "2024-12-03",
+    "filePath": "nabil_user/2024-12-03/Annual Report 2080-81 (Nepali)_compressed_compressed_1733218574103.pdf",
+    "encryptedId": "d893166b1e516af4d467d4af39c27acafbdd5cc7dbc6fee6aa73d5da734d76fdcb0c622c3b972cd83f753c8843d7d33644d1af317a56601cdfdd24b620fe63b7"
+   },
+   {
+    "id": 22986,
+    "activeStatus": "A",
+    "application": 38110,
+    "documentType": 54,
+    "submittedDate": "2024-12-03",
+    "filePath": "nabil_user/2024-12-03/Annual Report of Nabil Bank_1733218297136.pdf",
+    "encryptedId": "5807fd32fc6e898d9d4a9b58d5216c044344ad86ac112e5a91ead242ef7c3c1e294cb11163e8e8e6ede28821451b707b11b92501e059f5c8e5b84b51628ff071"
+   }
+  ]
+ },
+ {
+  "id": 38109,
+  "activeStatus": "A",
+  "applicationType": 111,
+  "applicationStatus": 3,
+  "companyNews": null,
+  "fiscalReport": {
+   "id": 4763,
+   "activeStatus": "A",
+   "quarterMaster": {
+    "id": 1,
+    "activeStatus": "A",
+    "quarterName": "First Quarter",
+    "versionId": 0
+   },
+   "reportTypeMaster": {
+    "id": 2,
+    "activeStatus": "A",
+    "reportName": "Quarterly Report",
+    "versionId": 0
+   },
+   "financialYear": {
+    "id": 40,
+    "activeStatus": "A",
+    "fyName": "2024-2025",
+    "fromYear": "2024-07-16",
+    "toYear": "2025-07-16",
+    "fyNameNepali": "2081-2082"
+   },
+   "peValue": 20.38,
+   "epsValue": 29.83,
+   "paidUpCapital": 27056996729.0,
+   "profitAmount": 2056590000.0,
+   "netWorthPerShare": 229.48,
+   "remarks": null
+  },
+  "applicationDocumentDetailsList": [
+   {
+    "id": 22985,
+    "activeStatus": "A",
+    "application": 38109,
+    "documentType": 54,
+    "submittedDate": "2024-12-03",
+    "filePath": "nabil_user/2024-12-03/Financial highlight Q1-Naya patrika_1733217543342.pdf",
+    "encryptedId": "13ebc93447a519336365732d7548b3d68d50bf50dd7d2d0612ebd844514533d6749d1505eb95787f4260d672e7c8dcdd1a9ae3e683423511cc148dcc0e3e06b4"
+   }
+  ]
+ },
+ {
+  "id": 17632,
+  "activeStatus": "A",
+  "applicationType": 111,
+  "applicationStatus": 3,
+  "companyNews": null,
+  "fiscalReport": {
+   "id": 86,
+   "activeStatus": "A",
+   "quarterMaster": {
+    "id": 4,
+    "activeStatus": "A",
+    "quarterName": "Fourth Quarter",
+    "versionId": 0
+   },
+   "reportTypeMaster": {
+    "id": 2,
+    "activeStatus": "A",
+    "reportName": "Quarterly Report",
+    "versionId": 0
+   },
+   "financialYear": {
+    "id": 34,
+    "activeStatus": "A",
+    "fyName": "2021-2022",
+    "fromYear": "2021-07-16",
+    "toYear": "2022-07-16",
+    "fyNameNepali": "2078-2079"
+   },
+   "peValue": 32.8,
+   "epsValue": 26.88,
+   "paidUpCapital": 22832908632.34,
+   "profitAmount": 4972756000.0,
+   "netWorthPerShare": 230.37,
+   "remarks": null
+  },
+  "applicationDocumentDetailsList": [
+   {
+    "id": 5030,
+    "activeStatus": "A",
+    "application": 17632,
+    "documentType": 54,
+    "submittedDate": "2022-08-24",
+    "filePath": "nabil_user/2022-08-24/4th Quarter Results of FY 2021-22 (2078-79) epaper (2)_1661324471419.pdf",
+    "encryptedId": "e5a3f66f2e6ed476580c2bc1e92c9e999618fdfa59a74da3656c5867a5c3baaf7ef83fbdb3ed5034e0d67e6a47035b00976cf29b2ffc2075e7a07ac907b30ffc"
+   }
+  ]
+ }
+]
