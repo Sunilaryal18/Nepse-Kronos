@@ -1338,6 +1338,19 @@ Expected: two metric tables over the same windows. Keep the fine-tuned model onl
 >
 > **Verdict:** run-to-run spread is larger than the gap between models, and fine-tuned mape is slightly worse, so by this task's rule the fine-tuned model is **not adopted**. Neither model beats the no-change baseline on error. Positive IC on the held-out year contrasts with negative IC over 2017–2026 (Task 6), so treat it as unconfirmed.
 
+> **Follow-up experiment — `--sample-count` (2026-10-04):** same held-out windows, 2 runs per setting (5 = the 4 runs above):
+>
+> | sample_count | model | mape (runs) | direction_accuracy | rank_ic | time/backtest |
+> |---|---|---|---|---|---|
+> | 5 | pretrained | 0.0179–0.0205 | 0.45–0.68 | 0.13–0.32 | ~10 s |
+> | 5 | fine-tuned | 0.0194–0.0219 | 0.50–0.61 | 0.20–0.38 | ~10 s |
+> | 20 | pretrained | 0.0178 / 0.0194 | 0.48 / 0.57 | 0.18 / 0.31 | 17 s |
+> | 20 | fine-tuned | 0.0205 / 0.0210 | 0.57 / 0.64 | 0.28 / 0.30 | 15 s |
+> | 50 | pretrained | **0.0180 / 0.0186** | 0.59 / 0.59 | 0.22 / 0.27 | 37 s |
+> | 50 | fine-tuned | 0.0202 / 0.0205 | 0.61 / 0.61 | 0.27 / 0.30 | 35 s |
+>
+> Naive mape is 0.0179. At 50 samples runs are reproducible, and pretrained Kronos-small roughly **ties** the no-change baseline on error (1.83% vs 1.79%) with 59% direction accuracy and IC ≈ 0.25 — suggestive but not significant on 44 windows (direction SE ≈ 0.075, IC SE ≈ 0.15). The fine-tuned model ranks moves about as well but has a **bearish bias** (mean predicted 5-day move −1.26% vs actual +0.13%; pretrained −0.31%), which is why its error is higher. Recommendation: use `--sample-count 50` for evaluation and forecasts.
+
 - [x] **Step 7: Commit**
 
 ```bash
