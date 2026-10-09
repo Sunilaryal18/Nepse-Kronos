@@ -1,3 +1,15 @@
+# Nepse-Kronos
+
+Kronos, the open-source foundation model for financial candlesticks, adapted to the **Nepal Stock Exchange (NEPSE)**:
+public data collection, a rules-based trading-system backtest (calm shares, money-cycle exposure, company quality,
+sector limits, broker flow, real NEPSE fees and taxes) and daily paper trading.
+
+**Start here: [`nepse_kronos/README.md`](nepse_kronos/README.md).** Research and analysis only — not investment advice.
+
+Built on [shiyu-coder/Kronos](https://github.com/shiyu-coder/Kronos) (MIT licence, see `LICENSE`); the original Kronos README follows.
+
+---
+
 <div align="center">
   <h2><b>Kronos: A Foundation Model for the Language of Financial Markets </b></h2>
 </div>
