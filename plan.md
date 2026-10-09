@@ -838,7 +838,7 @@ git commit -m "feat(nepse): prepare CLI for raw-to-clean conversion"
   - `plot_forecast(history, forecast, path, title) -> None`
   - CLI `python -m nepse_kronos.predict --symbol NABIL` writing `outputs/nepse/pred_<SYMBOL>.csv` and `.png`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/nepse_pipeline/test_forecast.py`:
 ```python
@@ -876,12 +876,12 @@ def test_plot_writes_png(ohlcv_factory, stub_predictor, tmp_path):
     assert path.stat().st_size > 0
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `python -m pytest tests/nepse_pipeline/test_forecast.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'nepse_kronos.forecast'`
 
-- [ ] **Step 3: Implement `nepse_kronos/forecast.py`**
+- [x] **Step 3: Implement `nepse_kronos/forecast.py`**
 
 ```python
 import matplotlib
@@ -898,8 +898,9 @@ FEATURES = ["open", "high", "low", "close", "volume", "amount"]
 def load_predictor(model_name="NeoQuasar/Kronos-small", tokenizer_name="NeoQuasar/Kronos-Tokenizer-base",
                    device=None, max_context=512):
     """Load Kronos from the Hugging Face Hub or a local checkpoint directory."""
-    tokenizer = KronosTokenizer.from_pretrained(tokenizer_name)
-    model = Kronos.from_pretrained(model_name)
+    # from_pretrained leaves the modules in training mode; eval() turns dropout off for inference.
+    tokenizer = KronosTokenizer.from_pretrained(tokenizer_name).eval()
+    model = Kronos.from_pretrained(model_name).eval()
     return KronosPredictor(model, tokenizer, device=device, max_context=max_context)
 
 
@@ -935,14 +936,14 @@ def plot_forecast(history, forecast, path, title):
     ax1.grid(True)
     ax2.bar(recent["timestamps"], recent["volume"], color="tab:blue")
     ax2.bar(forecast.index, forecast["volume"], color="tab:red")
-    ax2.set_ylabel("Volume (shares)")
+    ax2.set_ylabel("Volume")
     ax2.grid(True)
     fig.tight_layout()
     fig.savefig(path, dpi=120)
     plt.close(fig)
 ```
 
-- [ ] **Step 4: Implement the CLI `nepse_kronos/predict.py`**
+- [x] **Step 4: Implement the CLI `nepse_kronos/predict.py`**
 
 ```python
 """Forecast the next trading days for one NEPSE symbol.
@@ -991,17 +992,19 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `python -m pytest tests/nepse_pipeline/test_forecast.py -v`
-Expected: 3 passed
+Expected: 4 passed
 
-- [ ] **Step 6: Manual check with the real model**
+- [x] **Step 6: Manual check with the real model**
 
 Run: `python -m nepse_kronos.predict --symbol NEPSE_INDEX --pred-len 10`
 Expected: the first run downloads `Kronos-small` and the tokenizer (~100 MB); the table shows 10 rows dated on Mon–Fri only, with no holiday dates; `outputs/nepse/pred_NEPSE_INDEX.png` shows the red forecast continuing from the blue history without a jump in price level. If `mps` errors on Apple Silicon, re-run with `--device cpu`.
 
-- [ ] **Step 7: Commit**
+> **Done (2026-10-04):** the first real run failed on MPS with `scaled_dot_product_attention for MPS does not support dropout`. Root cause: `Kronos.from_pretrained` returns modules in **training mode** and `KronosPredictor` never calls `.eval()`, so dropout (0.1–0.25) was active during inference on every device (on CPU it silently adds noise). Fixed in `load_predictor` with `.eval()` plus a test (`test_load_predictor_puts_models_in_eval_mode`; Task 5 now has 4 tests). After the fix: runs on MPS in ~8 s; NEPSE_INDEX forecast 2026-10-05 → 2026-10-16 (Mon–Fri only), close drifting 2,575 → 2,566 from last close 2,587.25; chart continues without a level jump. Volume axis relabelled "Volume" since index volume is NPR turnover.
+
+- [x] **Step 7: Commit**
 
 ```bash
 git add nepse_kronos/forecast.py nepse_kronos/predict.py tests/nepse_pipeline/test_forecast.py
@@ -1179,7 +1182,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `python -m pytest tests/nepse_pipeline/test_backtest.py -v`
-Expected: 3 passed
+Expected: 4 passed
 
 - [ ] **Step 5: Manual baseline run with the pretrained model**
 
@@ -1388,7 +1391,7 @@ Forecasts are probabilistic research output, not investment advice.
 - [ ] **Step 2: Run the full NEPSE test suite**
 
 Run: `python -m pytest tests/nepse_pipeline -v`
-Expected: 24 passed
+Expected: 25 passed
 
 - [ ] **Step 3: Commit**
 
