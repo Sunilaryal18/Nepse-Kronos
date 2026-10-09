@@ -7,10 +7,10 @@
 **Architecture:** A small, self-contained package `nepse_kronos/` sits next to the existing `model/` package and does not modify it. Data flows in one direction:
 
 ```
-raw CSV exports ──► nepse_kronos.prepare ──► clean CSV ──┬──► nepse_kronos.predict   (forecast + chart)
-(data/nepse/raw)    (normalize columns,      (data/nepse/ ├──► nepse_kronos.backtest  (walk-forward metrics)
-                     adjust for bonus/        clean)      └──► finetune_csv/train_sequential.py (fine-tune)
-                     rights shares)
+nepse-open-data ──► nepse_kronos.fetch ──► raw CSV ──► nepse_kronos.prepare ──► clean CSV ──┬──► nepse_kronos.predict   (forecast + chart)
+(GitHub, public,    (one file per         (data/      (normalize columns,       (data/nepse/ ├──► nepse_kronos.backtest  (walk-forward metrics)
+ bonus/rights-       symbol)               nepse/raw)  validate rows)            clean)      └──► finetune_csv/train_sequential.py (fine-tune)
+ adjusted)
 ```
 
 Future dates are generated on a **Monday–Friday** NEPSE calendar minus a user-maintained holiday list. The Kronos model itself (`model/kronos.py`) is market-agnostic and is used as-is through `KronosPredictor`.
@@ -21,24 +21,27 @@ Future dates are generated on a **Monday–Friday** NEPSE calendar minus a user-
 - Run Kronos on NEPSE data.
 - NEPSE trades **Monday to Friday**; public holidays are closed.
 - Work proceeds one step at a time.
+- Use publicly available data (chosen: [socrateai-official/nepse-open-data](https://github.com/socrateai-official/nepse-open-data), MIT; see Task 3).
 
 ## Global Constraints
 
 - Do **not** modify `model/` or `finetune_csv/*.py`. New code lives in `nepse_kronos/`, tests in `tests/nepse_pipeline/`, config in `finetune_csv/configs/`.
 - Data frequency is **daily**. Timestamps are dates normalized to midnight (`hour = minute = 0`).
-- Canonical clean CSV columns, in this order: `timestamps,open,high,low,close,volume,amount`. `volume` = shares traded, `amount` = turnover in NPR.
+- Canonical clean CSV columns, in this order: `timestamps,open,high,low,close,volume,amount`. `volume` = shares traded, `amount` = turnover in NPR (the public source has no turnover, so it is estimated as volume × mean price).
+- Symbol names: stocks keep their NEPSE ticker (`NABIL`); indices get an `_INDEX` suffix (`NEPSE_INDEX`, `BANKING_INDEX`).
+- History before 2026-04-10 was traded Sunday–Thursday; it is used as-is (Kronos receives the real weekday). Only *future* dates use the Monday–Friday calendar.
 - Trading weekmask: `"Mon Tue Wed Thu Fri"`. Holidays come from `nepse_kronos/holidays.csv` (`date,name`).
 - Context length: `lookback <= 512` for `Kronos-small`/`Kronos-base`.
 - Unit tests must never download model weights: they use a stub predictor. Real-model runs are manual verification steps.
 - Raw/clean market data, downloaded weights and outputs are not committed (`.gitignore`).
-- Run every command from the repository root unless a step says otherwise.
+- Run every command from the repository root with `.venv311` activated (`source .venv311/bin/activate`) unless a step says otherwise.
 
 ## Out of Scope (separate plans later)
 
-- **Automatic downloading of NEPSE data.** NEPSE has no official public API; the source (scraper, community wrapper, paid feed) is a decision to make first. This plan starts from CSV files you place in `data/nepse/raw/`, so any source can be plugged in later by producing those CSVs.
+- **Our own bonus/rights price adjustment.** The chosen source already publishes adjusted stock prices. If you later switch to an unadjusted source, add an adjustment step between `fetch` and `prepare`.
+- Other data sources ([rajeevpaudel/nepse-history](https://github.com/rajeevpaudel/nepse-history), MIT, trade-level from 2015; ShareSansar/MeroLagani exports). Any CSV dropped into `data/nepse/raw/` is accepted by `prepare`.
 - Fine-tuning one model on many stocks at once (the `finetune_csv` loader windows over a single CSV; mixing stocks in one file would create windows that span two stocks).
 - Web UI integration (`webui/` already accepts any CSV in the canonical format).
-- Cash-dividend price adjustment (bonus and rights shares dominate in Nepal; cash dividends can be added later the same way).
 
 ## File Structure
 
@@ -48,8 +51,7 @@ Future dates are generated on a **Monday–Friday** NEPSE calendar minus a user-
 | `nepse_kronos/schema.py` | Turn any raw export (various column names, comma-formatted numbers) into the canonical OHLCV frame |
 | `nepse_kronos/trading_calendar.py` | Load holidays; generate the next N NEPSE trading days (Mon–Fri minus holidays) |
 | `nepse_kronos/holidays.csv` | User-maintained NEPSE holiday list |
-| `nepse_kronos/adjust.py` | Load corporate actions; back-adjust prices/volume for bonus and rights shares |
-| `nepse_kronos/corporate_actions.csv` | User-maintained bonus/rights list |
+| `nepse_kronos/fetch.py` | Download/update the public dataset; write one raw CSV per symbol |
 | `nepse_kronos/prepare.py` | CLI: raw CSVs → clean CSVs |
 | `nepse_kronos/forecast.py` | Load Kronos predictor; forecast the next N trading days; plot |
 | `nepse_kronos/predict.py` | CLI: clean CSV → forecast CSV + PNG |
@@ -354,7 +356,7 @@ git commit -m "feat(nepse): normalize raw NEPSE price exports to canonical OHLCV
 
 Kronos receives the weekday, day and month of every future candle, so the future dates must be real NEPSE trading days. Historical rows are kept as they are; this calendar is used only to build future dates.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/nepse_pipeline/test_trading_calendar.py`:
 ```python
@@ -394,12 +396,12 @@ def test_load_holidays_missing_file_returns_empty(tmp_path):
     assert load_holidays(tmp_path / "nope.csv") == []
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `python -m pytest tests/nepse_pipeline/test_trading_calendar.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'nepse_kronos.trading_calendar'`
 
-- [ ] **Step 3: Implement `nepse_kronos/trading_calendar.py`**
+- [x] **Step 3: Implement `nepse_kronos/trading_calendar.py`**
 
 ```python
 from pathlib import Path
@@ -426,7 +428,7 @@ def next_trading_days(last_date, n, holidays=(), weekmask=NEPSE_WEEKMASK):
     return pd.Series(days, name="timestamps")
 ```
 
-- [ ] **Step 4: Create the holiday list**
+- [x] **Step 4: Create the holiday list**
 
 `nepse_kronos/holidays.csv`:
 ```csv
@@ -434,14 +436,16 @@ def next_trading_days(last_date, n, holidays=(), weekmask=NEPSE_WEEKMASK):
 # Add one row per closure from NEPSE's official holiday notices, format YYYY-MM-DD.
 date,name
 ```
-Then add the real closure dates for the current and next fiscal year from the NEPSE notices page (nepalstock.com → Notices). Forecasts work without this file; holidays only shift the future dates by a day.
+Then add the real closure dates for the current and next fiscal year from the NEPSE notices page (nepalstock.com → Notices).
 
-- [ ] **Step 5: Run the tests to verify they pass**
+> **Done (2026-10-04):** seeded with 9 closures observed in the price data since 2026-04-10 and 13 upcoming weekday public holidays (Dashain, Tihar, Udhauli, Christmas, Maghe Sankranti, Gyalpo Lhosar) from the official 2083 BS list, converted BS→AD with `nepali-datetime`. Forecasts work without this file; holidays only shift the future dates by a day.
+
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `python -m pytest tests/nepse_pipeline/test_trading_calendar.py -v`
 Expected: 5 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add nepse_kronos/trading_calendar.py nepse_kronos/holidays.csv tests/nepse_pipeline/test_trading_calendar.py
@@ -450,174 +454,241 @@ git commit -m "feat(nepse): Mon-Fri trading calendar with holiday list"
 
 ---
 
-### Task 3: Bonus and rights share price adjustment
+### Task 3: Fetch public NEPSE data (socrateai-official/nepse-open-data)
 
 **Files:**
-- Create: `nepse_kronos/adjust.py`
-- Create: `nepse_kronos/corporate_actions.csv`
-- Test: `tests/nepse_pipeline/test_adjust.py`
+- Create: `nepse_kronos/fetch.py`
+- Test: `tests/nepse_pipeline/test_fetch.py`
 
 **Interfaces:**
-- Consumes: canonical frame from `normalize_ohlcv` (Task 1)
+- Consumes: nothing
 - Produces:
-  - `ACTION_COLUMNS: list[str]` = `["symbol","ex_date","bonus_pct","right_ratio","right_price"]`
-  - `load_corporate_actions(path) -> pd.DataFrame` (columns `ACTION_COLUMNS`; empty if file missing)
-  - `adjustment_factors(df, actions) -> pd.Series` (one multiplier per row of `df`, 1.0 on/after the last ex-date)
-  - `apply_corporate_actions(df, actions, symbol) -> pd.DataFrame` (same columns as input)
+  - `SOURCE_REPO: str`, `DEFAULT_SOURCE_DIR: pathlib.Path` (= `data/nepse/source/nepse-open-data`), `PRICE_FOLDERS: list[str]` (= `["ohlc_index", "ohlc_adjusted_stock"]`)
+  - `sync_source(source_dir=DEFAULT_SOURCE_DIR) -> None` — clone (first run) or update the dataset, price folders only
+  - `read_daily_files(folder) -> pd.DataFrame` — columns `date, open, high, low, close, volume, symbol`; one row per (symbol, date)
+  - `symbol_name(raw_symbol, is_index) -> str` — `"NEPSE_index"` → `"NEPSE_INDEX"`, `"Development%20Bank_index"` → `"DEVELOPMENT_BANK_INDEX"`, `"nabil"` → `"NABIL"`
+  - `write_symbol_files(df, out_dir, symbols=None) -> list[str]` — one `<SYMBOL>.csv` per symbol with columns `timestamps,open,high,low,close,volume`
+  - CLI `python -m nepse_kronos.fetch` writing `data/nepse/raw/<SYMBOL>.csv`
 
-**Why:** Nepali companies issue bonus shares very often. A 20% bonus makes the raw price fall by about 1/1.2 overnight. Kronos would read that drop as a crash and learn from fake moves. Back-adjusting earlier prices removes the jump.
-
-**Rules** (one row in `corporate_actions.csv` per event):
-- `ex_date` = the first trading day at the adjusted price. Rows strictly **before** `ex_date` are adjusted.
-- `bonus_pct` = bonus shares as % of holdings (20 means 20 new shares per 100). Factor `bf = 1 / (1 + bonus_pct/100)`.
-- `right_ratio` = new right shares per existing share (1:1 → `1.0`, 10:3 → `0.3`); `right_price` = subscription price in NPR (usually 100). Using `P` = bonus-adjusted close of the last day before `ex_date`: `TERP = (P + right_ratio*right_price) / (1 + right_ratio)`, factor `rf = TERP / P`.
-- Event factor = `bf * rf`. Factors of all later events multiply together for earlier rows.
-- Prices are multiplied by the factor; `volume` is divided by it (more shares, same money); `amount` is unchanged.
+**Source:** [socrateai-official/nepse-open-data](https://github.com/socrateai-official/nepse-open-data) (MIT licence, updated daily). Checked on 2026-10-04:
+- `ohlc_index/adj_YYYY-MM-DD.csv` — one file per trading day, one row per index (17 indices incl. `NEPSE_index`), 2003-07-17 onward. Older files have columns `open,high,low,close,volume,symbol,date`; newer files add `timestamp,date_unix`. Index volume is blank on ~55% of days (mostly older).
+- `ohlc_adjusted_stock/adj_YYYY-MM-DD.csv` — columns `date,close,open,high,low,volume,symbol`, ~350 stocks, 2011-07-15 onward. **Prices are already adjusted for bonus/rights shares** (verified on NABIL, NICA, UPPER, NTC: every >15% raw drop on a bonus date is a normal move in the adjusted series), so this plan does no corporate-action adjustment of its own.
+- Data-quality issue: two files in the *unadjusted* folder (`unadj_2025-07-07.csv`, `unadj_2025-07-08.csv`) contain unresolved git merge-conflict markers. The reader must survive such lines in any folder: rows whose `date` does not parse are dropped, and for duplicated (symbol, date) rows the last one wins.
+- Stock files have no turnover column; `amount` is estimated later by `normalize_ohlcv` as volume × mean price.
 
 - [ ] **Step 1: Write the failing tests**
 
-`tests/nepse_pipeline/test_adjust.py`:
+`tests/nepse_pipeline/test_fetch.py`:
 ```python
 import pandas as pd
-import pytest
 
-from nepse_kronos.adjust import ACTION_COLUMNS, adjustment_factors, apply_corporate_actions, load_corporate_actions
-
-
-def _actions(rows):
-    return pd.DataFrame(rows, columns=ACTION_COLUMNS).assign(ex_date=lambda d: pd.to_datetime(d["ex_date"]))
+from nepse_kronos.fetch import main, read_daily_files, symbol_name, write_symbol_files
+from nepse_kronos.schema import normalize_ohlcv
 
 
-def test_bonus_100_pct_halves_earlier_prices_and_doubles_volume(ohlcv_factory):
-    df = ohlcv_factory(6, start="2024-01-01", close=[100, 100, 100, 50, 50, 50])
-    actions = _actions([["ABC", "2024-01-04", 100.0, 0.0, 0.0]])
-    out = apply_corporate_actions(df, actions, "ABC")
-    assert out["close"].tolist() == [50.0] * 6
-    assert out["high"].iloc[0] == pytest.approx(50.5)
-    assert out["volume"].tolist() == [2000.0, 2000.0, 2000.0, 1000.0, 1000.0, 1000.0]
-    assert out["amount"].tolist() == df["amount"].tolist()
+def _write(path, text):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
 
 
-def test_rights_share_uses_theoretical_ex_rights_price(ohlcv_factory):
-    df = ohlcv_factory(4, start="2024-01-01", close=[200, 200, 150, 150])
-    actions = _actions([["ABC", "2024-01-03", 0.0, 1.0, 100.0]])
-    factors = adjustment_factors(df, actions)
-    # TERP = (200 + 1*100) / 2 = 150 -> factor 0.75
-    assert factors.tolist() == pytest.approx([0.75, 0.75, 1.0, 1.0])
+def test_read_daily_files_handles_mixed_columns_and_merge_conflicts(tmp_path):
+    _write(tmp_path / "ohlc_index" / "adj_2003-07-17.csv",
+           "open,high,low,close,volume,symbol,date\n"
+           "199.33,199.33,199.33,199.33,,NEPSE_index,2003-07-17\n")
+    _write(tmp_path / "ohlc_index" / "adj_2026-10-01.csv",
+           "timestamp,open,high,low,close,volume,symbol,date_unix,date\n"
+           "1790812800.0,2597.55,2605.64,2589.14,2599.15,4891876000.0,NEPSE_index,1790812800.0,2026-10-01\n"
+           "<<<<<<< HEAD\n"
+           "1790812800.0,1,1,1,1,1,NEPSE_index,1790812800.0,2026-10-01\n"
+           "=======\n"
+           "1790812800.0,2597.55,2605.64,2589.14,2599.15,4891876000.0,NEPSE_index,1790812800.0,2026-10-01\n"
+           ">>>>>>> 1a2b3c4\n")
+    df = read_daily_files(tmp_path / "ohlc_index")
+
+    assert list(df.columns) == ["date", "open", "high", "low", "close", "volume", "symbol"]
+    assert df["date"].dt.strftime("%Y-%m-%d").tolist() == ["2003-07-17", "2026-10-01"]
+    assert df["close"].tolist() == [199.33, 2599.15]
+    assert pd.isna(df["volume"].iloc[0])
 
 
-def test_multiple_events_compound(ohlcv_factory):
-    df = ohlcv_factory(5, start="2024-01-01", close=[100, 100, 80, 80, 80])
-    actions = _actions([
-        ["ABC", "2024-01-03", 25.0, 0.0, 0.0],   # factor 0.8
-        ["ABC", "2024-01-05", 100.0, 0.0, 0.0],  # factor 0.5
-    ])
-    assert adjustment_factors(df, actions).tolist() == pytest.approx([0.4, 0.4, 0.5, 0.5, 1.0])
+def test_symbol_name():
+    assert symbol_name("NEPSE_index", is_index=True) == "NEPSE_INDEX"
+    assert symbol_name("Development%20Bank_index", is_index=True) == "DEVELOPMENT_BANK_INDEX"
+    assert symbol_name("Sen.%20Float_index", is_index=True) == "SEN_FLOAT_INDEX"
+    assert symbol_name("nabil", is_index=False) == "NABIL"
 
 
-def test_other_symbols_and_out_of_range_events_are_ignored(ohlcv_factory):
-    df = ohlcv_factory(3, start="2024-01-01")
-    actions = _actions([
-        ["XYZ", "2024-01-02", 50.0, 0.0, 0.0],
-        ["ABC", "2023-06-01", 50.0, 0.0, 0.0],
-    ])
-    pd.testing.assert_frame_equal(apply_corporate_actions(df, actions, "abc"), df)
+def test_write_symbol_files_sorted_per_symbol_and_filtered(tmp_path):
+    df = pd.DataFrame({
+        "date": pd.to_datetime(["2024-01-02", "2024-01-01", "2024-01-01"]),
+        "open": [11.0, 10.0, 50.0], "high": [12.0, 11.0, 51.0], "low": [10.0, 9.0, 49.0],
+        "close": [11.5, 10.5, 50.5], "volume": [100.0, 200.0, 300.0],
+        "symbol": ["AAA", "AAA", "BBB"],
+    })
+    written = write_symbol_files(df, tmp_path, symbols=["aaa"])
+
+    assert written == ["AAA"]
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["AAA.csv"]
+    out = pd.read_csv(tmp_path / "AAA.csv")
+    assert list(out.columns) == ["timestamps", "open", "high", "low", "close", "volume"]
+    assert out["timestamps"].tolist() == ["2024-01-01", "2024-01-02"]
+    # the written file is accepted by the Task 1 normalizer
+    assert len(normalize_ohlcv(out)) == 2
 
 
-def test_load_corporate_actions_fills_blanks_and_uppercases(tmp_path):
-    path = tmp_path / "ca.csv"
-    path.write_text("symbol,ex_date,bonus_pct,right_ratio,right_price\nnabil,2024-01-04,10,,\n")
-    actions = load_corporate_actions(path)
-    assert actions.loc[0, "symbol"] == "NABIL"
-    assert actions.loc[0, "ex_date"] == pd.Timestamp("2024-01-04")
-    assert actions.loc[0, "right_ratio"] == 0.0
+def test_main_builds_index_and_stock_files_without_network(tmp_path):
+    source, out = tmp_path / "source", tmp_path / "raw"
+    _write(source / "ohlc_index" / "adj_2026-10-01.csv",
+           "open,high,low,close,volume,symbol,date\n"
+           "2597.55,2605.64,2589.14,2599.15,4891876000,NEPSE_index,2026-10-01\n"
+           "1494.38,1502.34,1489.64,1499.98,835270533,Banking_index,2026-10-01\n")
+    _write(source / "ohlc_adjusted_stock" / "adj_2026-10-01.csv",
+           "date,close,open,high,low,volume,symbol\n"
+           "2026-10-01,310.0,305.5,310.9,303.3,34881,ADBL\n")
+
+    main(["--source-dir", str(source), "--out-dir", str(out), "--no-sync"])
+
+    assert sorted(p.name for p in out.iterdir()) == ["ADBL.csv", "BANKING_INDEX.csv", "NEPSE_INDEX.csv"]
+    assert pd.read_csv(out / "ADBL.csv")["close"].tolist() == [310.0]
 
 
-def test_load_corporate_actions_missing_file_is_empty(tmp_path):
-    actions = load_corporate_actions(tmp_path / "nope.csv")
-    assert list(actions.columns) == ACTION_COLUMNS
-    assert actions.empty
+def test_main_symbols_filter(tmp_path):
+    source, out = tmp_path / "source", tmp_path / "raw"
+    _write(source / "ohlc_index" / "adj_2026-10-01.csv",
+           "open,high,low,close,volume,symbol,date\n"
+           "2597.55,2605.64,2589.14,2599.15,4891876000,NEPSE_index,2026-10-01\n")
+    _write(source / "ohlc_adjusted_stock" / "adj_2026-10-01.csv",
+           "date,close,open,high,low,volume,symbol\n"
+           "2026-10-01,310.0,305.5,310.9,303.3,34881,ADBL\n")
+
+    main(["--source-dir", str(source), "--out-dir", str(out), "--no-sync", "--symbols", "nepse_index"])
+
+    assert sorted(p.name for p in out.iterdir()) == ["NEPSE_INDEX.csv"]
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `python -m pytest tests/nepse_pipeline/test_adjust.py -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'nepse_kronos.adjust'`
+Run: `python -m pytest tests/nepse_pipeline/test_fetch.py -v`
+Expected: FAIL with `ModuleNotFoundError: No module named 'nepse_kronos.fetch'`
 
-- [ ] **Step 3: Implement `nepse_kronos/adjust.py`**
+- [ ] **Step 3: Implement `nepse_kronos/fetch.py`**
 
 ```python
+"""Download public NEPSE daily prices and split them into one CSV per symbol.
+
+Source: https://github.com/socrateai-official/nepse-open-data (MIT licence).
+Stock prices in its ohlc_adjusted_stock folder are already adjusted for bonus and rights shares.
+
+Usage:
+    python -m nepse_kronos.fetch                          # update source, write every symbol
+    python -m nepse_kronos.fetch --symbols NEPSE_INDEX NABIL
+    python -m nepse_kronos.fetch --no-sync                # reuse the local copy
+"""
+import argparse
+import re
+import subprocess
 from pathlib import Path
+from urllib.parse import unquote
 
 import pandas as pd
 
-from nepse_kronos.schema import PRICE_COLUMNS
-
-ACTION_COLUMNS = ["symbol", "ex_date", "bonus_pct", "right_ratio", "right_price"]
-
-
-def load_corporate_actions(path):
-    """Read bonus/rights events. A missing file means no events."""
-    path = Path(path)
-    if not path.exists():
-        return pd.DataFrame(columns=ACTION_COLUMNS)
-    actions = pd.read_csv(path, comment="#")
-    actions["symbol"] = actions["symbol"].astype(str).str.strip().str.upper()
-    actions["ex_date"] = pd.to_datetime(actions["ex_date"]).dt.normalize()
-    for col in ["bonus_pct", "right_ratio", "right_price"]:
-        actions[col] = pd.to_numeric(actions[col], errors="coerce").fillna(0.0)
-    return actions[ACTION_COLUMNS]
+SOURCE_REPO = "https://github.com/socrateai-official/nepse-open-data.git"
+DEFAULT_SOURCE_DIR = Path("data/nepse/source/nepse-open-data")
+PRICE_FOLDERS = ["ohlc_index", "ohlc_adjusted_stock"]
+COLUMNS = ["date", "open", "high", "low", "close", "volume", "symbol"]
 
 
-def adjustment_factors(df, actions):
-    """Price multiplier per row of df so that history is comparable with today's share count."""
-    factors = pd.Series(1.0, index=df.index)
-    for event in actions.sort_values("ex_date").itertuples():
-        before = df["timestamps"] < event.ex_date
-        if not before.any() or before.all():
+def sync_source(source_dir=DEFAULT_SOURCE_DIR):
+    """Clone the dataset (price folders only) or update an existing copy to the latest commit."""
+    source_dir = Path(source_dir)
+    if (source_dir / ".git").exists():
+        subprocess.run(["git", "-C", str(source_dir), "fetch", "--quiet", "--depth", "1", "origin", "main"], check=True)
+        subprocess.run(["git", "-C", str(source_dir), "reset", "--quiet", "--hard", "FETCH_HEAD"], check=True)
+    else:
+        source_dir.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "clone", "--quiet", "--depth", "1", "--filter=blob:none", "--sparse",
+                        SOURCE_REPO, str(source_dir)], check=True)
+    subprocess.run(["git", "-C", str(source_dir), "sparse-checkout", "set", *PRICE_FOLDERS], check=True)
+
+
+def read_daily_files(folder):
+    """Concatenate one-file-per-day CSVs, tolerating varying columns and merge-conflict debris."""
+    frames = [pd.read_csv(path, dtype=str, usecols=lambda c: c in COLUMNS)
+              for path in sorted(Path(folder).glob("*.csv"))]
+    df = pd.concat(frames, ignore_index=True).reindex(columns=COLUMNS)
+    df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d", errors="coerce")
+    for col in ["open", "high", "low", "close", "volume"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = df.dropna(subset=["date", "symbol"])
+    return df.drop_duplicates(["symbol", "date"], keep="last").sort_values(["symbol", "date"]).reset_index(drop=True)
+
+
+def symbol_name(raw_symbol, is_index):
+    name = unquote(raw_symbol)
+    if is_index:
+        name = name.removesuffix("_index")
+    name = re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_").upper()
+    return f"{name}_INDEX" if is_index else name
+
+
+def write_symbol_files(df, out_dir, symbols=None):
+    """Write <SYMBOL>.csv per symbol; returns the symbols written."""
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    wanted = {s.upper() for s in symbols} if symbols else None
+    written = []
+    for symbol, rows in df.groupby("symbol", sort=True):
+        if wanted and symbol not in wanted:
             continue
-        bonus_factor = 1.0 / (1.0 + event.bonus_pct / 100.0)
-        rights_factor = 1.0
-        if event.right_ratio > 0:
-            cum_price = df.loc[before, "close"].iloc[-1] * bonus_factor
-            terp = (cum_price + event.right_ratio * event.right_price) / (1.0 + event.right_ratio)
-            rights_factor = terp / cum_price
-        factors[before] *= bonus_factor * rights_factor
-    return factors
+        rows = rows.sort_values("date").rename(columns={"date": "timestamps"})
+        rows[["timestamps", "open", "high", "low", "close", "volume"]].to_csv(
+            out_dir / f"{symbol}.csv", index=False, date_format="%Y-%m-%d")
+        written.append(symbol)
+    return written
 
 
-def apply_corporate_actions(df, actions, symbol):
-    """Back-adjust prices and volume of one symbol for its bonus and rights issues."""
-    own = actions[actions["symbol"] == symbol.upper()]
-    factors = adjustment_factors(df, own)
-    out = df.copy()
-    out[PRICE_COLUMNS] = out[PRICE_COLUMNS].mul(factors, axis=0)
-    out["volume"] = out["volume"] / factors
-    return out
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--source-dir", default=str(DEFAULT_SOURCE_DIR))
+    parser.add_argument("--out-dir", default="data/nepse/raw")
+    parser.add_argument("--symbols", nargs="*", help="Only these symbols, e.g. NEPSE_INDEX NABIL")
+    parser.add_argument("--no-sync", action="store_true", help="Do not clone/update the source first")
+    args = parser.parse_args(argv)
+
+    if not args.no_sync:
+        sync_source(args.source_dir)
+    source = Path(args.source_dir)
+    indices = read_daily_files(source / "ohlc_index")
+    indices["symbol"] = indices["symbol"].map(lambda s: symbol_name(s, is_index=True))
+    stocks = read_daily_files(source / "ohlc_adjusted_stock")
+    stocks["symbol"] = stocks["symbol"].map(lambda s: symbol_name(s, is_index=False))
+
+    written = write_symbol_files(pd.concat([indices, stocks], ignore_index=True), args.out_dir, args.symbols)
+    latest = max(indices["date"].max(), stocks["date"].max()).date()
+    print(f"Wrote {len(written)} symbol files to {args.out_dir} (data up to {latest})")
+
+
+if __name__ == "__main__":
+    main()
 ```
 
-Note: `before.all()` is skipped because an event after the last available row cannot be verified against data and would scale the whole series uniformly (which changes nothing Kronos sees after normalization).
+- [ ] **Step 4: Run the tests to verify they pass**
 
-- [ ] **Step 4: Create the corporate actions list**
+Run: `python -m pytest tests/nepse_pipeline/test_fetch.py -v`
+Expected: 5 passed
 
-`nepse_kronos/corporate_actions.csv`:
-```csv
-# One row per bonus/rights event. ex_date = first trading day at the adjusted price (YYYY-MM-DD).
-# bonus_pct: 20 means 20 bonus shares per 100. right_ratio: new shares per existing share (1:1 -> 1.0). right_price: NPR per right share.
-symbol,ex_date,bonus_pct,right_ratio,right_price
-```
-For each symbol you will forecast, fill in its events (bonus %, rights ratio, book-closure/price-adjustment date) from NEPSE or ShareSansar/MeroLagani company announcements. **Index series (e.g. NEPSE index) need no rows.**
+- [ ] **Step 5: Manual check against the real dataset**
 
-- [ ] **Step 5: Run the tests to verify they pass**
-
-Run: `python -m pytest tests/nepse_pipeline/test_adjust.py -v`
-Expected: 6 passed
+Run: `python -m nepse_kronos.fetch`
+Expected: first run clones ~110 MB into `data/nepse/source/nepse-open-data` (later runs only fetch new commits), then prints `Wrote ~370 symbol files to data/nepse/raw (data up to 2026-10-..)`.
+Then: `head -3 data/nepse/raw/NEPSE_INDEX.csv && tail -2 data/nepse/raw/NEPSE_INDEX.csv`
+Expected: starts in 2003-07, ends on the latest trading day with a close around 2,500–2,700.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add nepse_kronos/adjust.py nepse_kronos/corporate_actions.csv tests/nepse_pipeline/test_adjust.py
-git commit -m "feat(nepse): back-adjust prices for bonus and rights shares"
+git add nepse_kronos/fetch.py tests/nepse_pipeline/test_fetch.py
+git commit -m "feat(nepse): fetch public NEPSE daily prices per symbol"
 ```
 
 ---
@@ -629,9 +700,9 @@ git commit -m "feat(nepse): back-adjust prices for bonus and rights shares"
 - Test: `tests/nepse_pipeline/test_prepare.py`
 
 **Interfaces:**
-- Consumes: `normalize_ohlcv` (Task 1), `load_corporate_actions`, `apply_corporate_actions` (Task 3)
+- Consumes: `normalize_ohlcv` (Task 1); raw files from Task 3 (or any CSV export placed in `data/nepse/raw/`)
 - Produces:
-  - `prepare_file(raw_path, symbol, actions) -> pd.DataFrame`
+  - `prepare_file(raw_path) -> pd.DataFrame`
   - `main(argv: list[str] | None = None) -> None`; run as `python -m nepse_kronos.prepare`
   - Output files `data/nepse/clean/<SYMBOL>.csv` with `CANONICAL_COLUMNS`, dates as `YYYY-MM-DD`. The symbol is the raw file name without extension, upper-cased.
 
@@ -644,25 +715,23 @@ import pandas as pd
 from nepse_kronos.prepare import main
 
 
-def test_main_writes_clean_adjusted_csv(tmp_path):
+def test_main_writes_clean_csv(tmp_path):
     raw_dir, out_dir = tmp_path / "raw", tmp_path / "clean"
     raw_dir.mkdir()
     (raw_dir / "abc.csv").write_text(
         "Date,Open,High,Low,LTP,Total Traded Quantity,Turnover\n"
         "2024-01-03,50,51,49,50,1000,50000\n"
         "2024-01-01,100,101,99,100,1000,100000\n"
-        "2024-01-02,100,101,99,100,1000,100000\n"
+        "2024-01-02,100,101,99,100,,\n"
     )
-    actions = tmp_path / "ca.csv"
-    actions.write_text("symbol,ex_date,bonus_pct,right_ratio,right_price\nABC,2024-01-03,100,0,0\n")
 
-    main(["--raw-dir", str(raw_dir), "--out-dir", str(out_dir), "--actions", str(actions)])
+    main(["--raw-dir", str(raw_dir), "--out-dir", str(out_dir)])
 
     clean = pd.read_csv(out_dir / "ABC.csv")
     assert list(clean.columns) == ["timestamps", "open", "high", "low", "close", "volume", "amount"]
     assert clean["timestamps"].tolist() == ["2024-01-01", "2024-01-02", "2024-01-03"]
-    assert clean["close"].tolist() == [50.0, 50.0, 50.0]
-    assert clean["volume"].tolist() == [2000.0, 2000.0, 1000.0]
+    assert clean["close"].tolist() == [100.0, 100.0, 50.0]
+    assert clean["volume"].tolist() == [1000.0, 0.0, 1000.0]
 
 
 def test_symbols_filter(tmp_path):
@@ -672,8 +741,7 @@ def test_symbols_filter(tmp_path):
     (raw_dir / "AAA.csv").write_text(row)
     (raw_dir / "BBB.csv").write_text(row)
 
-    main(["--raw-dir", str(raw_dir), "--out-dir", str(out_dir),
-          "--actions", str(tmp_path / "none.csv"), "--symbols", "bbb"])
+    main(["--raw-dir", str(raw_dir), "--out-dir", str(out_dir), "--symbols", "bbb"])
 
     assert sorted(p.name for p in out_dir.iterdir()) == ["BBB.csv"]
 ```
@@ -686,35 +754,31 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'nepse_kronos.prepare'
 - [ ] **Step 3: Implement `nepse_kronos/prepare.py`**
 
 ```python
-"""Turn raw NEPSE price exports into clean, adjusted CSVs.
+"""Turn raw NEPSE price files into clean CSVs in the canonical Kronos format.
 
 Usage:
-    python -m nepse_kronos.prepare                      # every CSV in data/nepse/raw
-    python -m nepse_kronos.prepare --symbols NABIL NEPSE
+    python -m nepse_kronos.prepare                          # every CSV in data/nepse/raw
+    python -m nepse_kronos.prepare --symbols NEPSE_INDEX NABIL
 """
 import argparse
 from pathlib import Path
 
 import pandas as pd
 
-from nepse_kronos.adjust import apply_corporate_actions, load_corporate_actions
 from nepse_kronos.schema import normalize_ohlcv
 
 
-def prepare_file(raw_path, symbol, actions):
-    df = normalize_ohlcv(pd.read_csv(raw_path))
-    return apply_corporate_actions(df, actions, symbol)
+def prepare_file(raw_path):
+    return normalize_ohlcv(pd.read_csv(raw_path))
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--raw-dir", default="data/nepse/raw")
     parser.add_argument("--out-dir", default="data/nepse/clean")
-    parser.add_argument("--actions", default="nepse_kronos/corporate_actions.csv")
     parser.add_argument("--symbols", nargs="*", help="Only these symbols (file names without .csv)")
     args = parser.parse_args(argv)
 
-    actions = load_corporate_actions(args.actions)
     wanted = {s.upper() for s in args.symbols} if args.symbols else None
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -723,7 +787,7 @@ def main(argv=None):
         symbol = raw_path.stem.upper()
         if wanted and symbol not in wanted:
             continue
-        clean = prepare_file(raw_path, symbol, actions)
+        clean = prepare_file(raw_path)
         clean.to_csv(out_dir / f"{symbol}.csv", index=False, date_format="%Y-%m-%d")
         print(f"{symbol}: {len(clean)} rows, {clean['timestamps'].min().date()} -> {clean['timestamps'].max().date()}")
 
@@ -739,10 +803,11 @@ Expected: 2 passed
 
 - [ ] **Step 5: Manual check with real data**
 
-Put at least one real export in `data/nepse/raw/` (e.g. `NEPSE.csv` for the index, `NABIL.csv` for a stock; at least ~450 trading days of daily history). Then:
+Run: `python -m nepse_kronos.prepare --symbols NEPSE_INDEX NABIL`
+Expected: two lines such as `NEPSE_INDEX: 5350 rows, 2003-07-17 -> 2026-10-..` and `NABIL: 34xx rows, 2011-07-17 -> 2026-10-..`. Then check the adjusted stock series has no fake crashes:
 
-Run: `python -m nepse_kronos.prepare`
-Expected: one line per file such as `NABIL: 2875 rows, 2013-... -> 2026-...`. Open `data/nepse/clean/NABIL.csv`, check there are no sudden ~50% drops at known bonus dates. If there are, add the missing event to `corporate_actions.csv` and re-run.
+Run: `python -c "import pandas as pd; c = pd.read_csv('data/nepse/clean/NABIL.csv')['close']; print((c.pct_change() < -0.15).sum())"`
+Expected: `0`
 
 - [ ] **Step 6: Commit**
 
@@ -880,7 +945,7 @@ def plot_forecast(history, forecast, path, title):
 
 Usage:
     python -m nepse_kronos.predict --symbol NABIL --pred-len 10
-    python -m nepse_kronos.predict --symbol NEPSE --model finetuned/NEPSE_daily/basemodel/best_model \
+    python -m nepse_kronos.predict --symbol NEPSE_INDEX --model finetuned/NEPSE_daily/basemodel/best_model \
         --tokenizer finetuned/NEPSE_daily/tokenizer/best_model
 """
 import argparse
@@ -929,8 +994,8 @@ Expected: 3 passed
 
 - [ ] **Step 6: Manual check with the real model**
 
-Run: `python -m nepse_kronos.predict --symbol NEPSE --pred-len 10`
-Expected: the first run downloads `Kronos-small` and the tokenizer (~100 MB); the table shows 10 rows dated on Mon–Fri only, with no holiday dates; `outputs/nepse/pred_NEPSE.png` shows the red forecast continuing from the blue history without a jump in price level. If `mps` errors on Apple Silicon, re-run with `--device cpu`.
+Run: `python -m nepse_kronos.predict --symbol NEPSE_INDEX --pred-len 10`
+Expected: the first run downloads `Kronos-small` and the tokenizer (~100 MB); the table shows 10 rows dated on Mon–Fri only, with no holiday dates; `outputs/nepse/pred_NEPSE_INDEX.png` shows the red forecast continuing from the blue history without a jump in price level. If `mps` errors on Apple Silicon, re-run with `--device cpu`.
 
 - [ ] **Step 7: Commit**
 
@@ -1017,8 +1082,8 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'nepse_kronos.backtest
 """Walk-forward backtest of Kronos forecasts on one NEPSE symbol.
 
 Usage:
-    python -m nepse_kronos.backtest --symbol NEPSE --pred-len 5 --step 10
-    python -m nepse_kronos.backtest --symbol NEPSE --start-date 2025-06-01 \
+    python -m nepse_kronos.backtest --symbol NEPSE_INDEX --pred-len 5 --step 10
+    python -m nepse_kronos.backtest --symbol NEPSE_INDEX --start-date 2025-06-01 \
         --model finetuned/NEPSE_daily/basemodel/best_model --tokenizer finetuned/NEPSE_daily/tokenizer/best_model
 """
 import argparse
@@ -1114,7 +1179,7 @@ Expected: 3 passed
 
 - [ ] **Step 5: Manual baseline run with the pretrained model**
 
-Run: `python -m nepse_kronos.backtest --symbol NEPSE --pred-len 5 --step 10`
+Run: `python -m nepse_kronos.backtest --symbol NEPSE_INDEX --pred-len 5 --step 10`
 Expected: prints `windows`, `direction_accuracy`, `mape`, `naive_mape`, `rank_ic`. On CPU this takes several minutes (one forecast per window). **Write these numbers down** — they are the baseline that fine-tuning (Task 7) must beat. A useful model has `mape < naive_mape` and `direction_accuracy > 0.5`.
 
 - [ ] **Step 6: Commit**
@@ -1132,7 +1197,7 @@ git commit -m "feat(nepse): walk-forward backtest with naive baseline"
 - Create: `finetune_csv/configs/config_nepse_daily.yaml`
 
 **Interfaces:**
-- Consumes: clean CSV `data/nepse/clean/NEPSE.csv` (Task 4); existing `finetune_csv/train_sequential.py`
+- Consumes: clean CSV `data/nepse/clean/NEPSE_INDEX.csv` (Task 4); existing `finetune_csv/train_sequential.py`
 - Produces: checkpoints `finetuned/NEPSE_daily/tokenizer/best_model/` and `finetuned/NEPSE_daily/basemodel/best_model/`, loadable via `--model`/`--tokenizer` in Tasks 5–6
 
 `finetune_csv` splits the CSV by time: first 80% train, next 10% validation, last 10% unused by training. The backtest then runs only on that last 10%, so the fine-tuned model is scored on days it never saw.
@@ -1158,7 +1223,7 @@ Paths are relative to `finetune_csv/`, because training is run from that directo
 # Run from finetune_csv/:  python train_sequential.py --config configs/config_nepse_daily.yaml
 
 data:
-  data_path: "../data/nepse/clean/NEPSE.csv"
+  data_path: "../data/nepse/clean/NEPSE_INDEX.csv"
   lookback_window: 256
   predict_window: 10
   max_context: 512
@@ -1217,7 +1282,7 @@ device:
 
 Each training sample needs `lookback_window + predict_window + 1 = 267` rows, and the validation split (10%) must also hold at least one sample, so the CSV needs **≥ 2,670 rows** (~11 years of daily data). For a shorter series lower `lookback_window` to 128 (needs ≥ 1,390 rows).
 
-Run: `python -c "import pandas as pd; print(len(pd.read_csv('data/nepse/clean/NEPSE.csv')))"`
+Run: `python -c "import pandas as pd; print(len(pd.read_csv('data/nepse/clean/NEPSE_INDEX.csv')))"`
 Expected: a number ≥ 2670 (or lower the lookback as above).
 
 - [ ] **Step 4: Train**
@@ -1232,14 +1297,14 @@ Expected: tokenizer then basemodel training logs; validation loss printed each e
 
 - [ ] **Step 5: Find the start of the held-out period**
 
-Run: `python -c "import pandas as pd; df = pd.read_csv('data/nepse/clean/NEPSE.csv'); print(df['timestamps'].iloc[int(len(df) * 0.9)])"`
+Run: `python -c "import pandas as pd; df = pd.read_csv('data/nepse/clean/NEPSE_INDEX.csv'); print(df['timestamps'].iloc[int(len(df) * 0.9)])"`
 Expected: a date, e.g. `2025-05-14`. Use it as `HOLDOUT` below.
 
 - [ ] **Step 6: Compare pretrained vs fine-tuned on the held-out period**
 
 ```bash
-python -m nepse_kronos.backtest --symbol NEPSE --pred-len 5 --step 5 --lookback 256 --start-date HOLDOUT
-python -m nepse_kronos.backtest --symbol NEPSE --pred-len 5 --step 5 --lookback 256 --start-date HOLDOUT \
+python -m nepse_kronos.backtest --symbol NEPSE_INDEX --pred-len 5 --step 5 --lookback 256 --start-date HOLDOUT
+python -m nepse_kronos.backtest --symbol NEPSE_INDEX --pred-len 5 --step 5 --lookback 256 --start-date HOLDOUT \
     --model finetuned/NEPSE_daily/basemodel/best_model \
     --tokenizer finetuned/NEPSE_daily/tokenizer/best_model
 ```
@@ -1276,12 +1341,13 @@ uv venv --python 3.11 .venv && source .venv/bin/activate
 uv pip install -r requirements.txt pytest pyyaml
 ```
 
-## 2. Add data
-Put one daily price CSV per symbol in `data/nepse/raw/<SYMBOL>.csv`. Needed columns (any common NEPSE export naming works, e.g. `Date`, `LTP`, `Total Traded Quantity`, `Turnover`): date, open, high, low, close; volume and turnover are optional.
+## 2. Get data
+```bash
+python -m nepse_kronos.fetch          # public data from github.com/socrateai-official/nepse-open-data (MIT)
+```
+Writes one file per symbol to `data/nepse/raw/` (stocks like `NABIL.csv`, indices like `NEPSE_INDEX.csv`). Stock prices are already adjusted for bonus and rights shares. You can also drop your own CSV exports there (e.g. `Date`, `Open`, `High`, `Low`, `LTP`, `Total Traded Quantity`, `Turnover`).
 
-Keep these two lists up to date:
-- `nepse_kronos/corporate_actions.csv` – bonus and rights issues per symbol (not needed for indices)
-- `nepse_kronos/holidays.csv` – weekday market closures
+Keep `nepse_kronos/holidays.csv` (weekday market closures) up to date.
 
 ## 3. Clean
 ```bash
@@ -1318,7 +1384,7 @@ Forecasts are probabilistic research output, not investment advice.
 - [ ] **Step 2: Run the full NEPSE test suite**
 
 Run: `python -m pytest tests/nepse_pipeline -v`
-Expected: 25 passed
+Expected: 24 passed
 
 - [ ] **Step 3: Commit**
 
@@ -1331,7 +1397,6 @@ git commit -m "docs(nepse): end-to-end usage guide"
 
 ## Suggested follow-ups (separate plans)
 
-1. **Data fetcher** — choose a source, then add `nepse_kronos/fetch.py` that writes `data/nepse/raw/<SYMBOL>.csv` in a format `normalize_ohlcv` already accepts.
+1. **Scheduled refresh** — run `fetch` + `prepare` + `predict` daily after market close.
 2. **Batch forecasting** for many symbols with `KronosPredictor.predict_batch` (all series need the same `lookback` and `pred_len`).
 3. **Multi-stock fine-tuning** with a dataset class that windows within each symbol separately.
-4. **Cash-dividend adjustment** in `adjust.py`.

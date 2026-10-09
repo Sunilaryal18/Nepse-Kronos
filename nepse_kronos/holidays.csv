@@ -1,0 +1,27 @@
+# NEPSE weekday market closures (weekends are already excluded). Format YYYY-MM-DD.
+# Past rows: weekdays with no trading in the price data since the Mon-Fri switch (2026-04-10).
+# Future rows: Government of Nepal public holidays 2083 BS (edusanjal.com/news/list-of-public-holidays-of-nepal),
+#   converted BS->AD with the nepali-datetime package; check against NEPSE notices (nepalstock.com) as they are announced.
+date,name
+2026-04-14,Observed closure (Nepali New Year 2083)
+2026-05-01,Observed closure
+2026-05-28,Observed closure
+2026-05-29,Observed closure
+2026-08-28,Observed closure
+2026-09-04,Observed closure
+2026-09-08,Observed closure
+2026-09-21,Observed closure
+2026-09-25,Observed closure
+2026-10-19,Dashain
+2026-10-20,Dashain
+2026-10-21,Dashain (Vijaya Dashami)
+2026-10-22,Dashain
+2026-10-23,Dashain
+2026-11-09,Tihar
+2026-11-10,Tihar
+2026-11-11,Tihar
+2026-11-12,Tihar
+2026-12-24,Udhauli Parva / Yomari Punhi
+2026-12-25,Christmas
+2027-01-15,Maghe Sankranti
+2027-03-09,Gyalpo Lhosar
