@@ -836,7 +836,7 @@ git commit -m "feat(nepse): prepare CLI for raw-to-clean conversion"
 - Produces:
   - `FEATURES: list[str]` = `["open","high","low","close","volume","amount"]`
   - `load_predictor(model_name="NeoQuasar/Kronos-small", tokenizer_name="NeoQuasar/Kronos-Tokenizer-base", device=None, max_context=512) -> KronosPredictor` (names may also be local directories, e.g. fine-tuned checkpoints)
-  - `forecast_next(predictor, df, pred_len, lookback=400, holidays=(), sample_count=10, T=1.0, top_p=0.9) -> pd.DataFrame` (columns `FEATURES`, index = future trading dates named `timestamps`)
+  - `forecast_next(predictor, df, pred_len, lookback=400, holidays=(), sample_count=50, T=1.0, top_p=0.9) -> pd.DataFrame` (columns `FEATURES`, index = future trading dates named `timestamps`)
   - `plot_forecast(history, forecast, path, title) -> None`
   - CLI `python -m nepse_kronos.predict --symbol NABIL` writing `outputs/nepse/pred_<SYMBOL>.csv` and `.png`
 
@@ -906,7 +906,7 @@ def load_predictor(model_name="NeoQuasar/Kronos-small", tokenizer_name="NeoQuasa
     return KronosPredictor(model, tokenizer, device=device, max_context=max_context)
 
 
-def forecast_next(predictor, df, pred_len, lookback=400, holidays=(), sample_count=10, T=1.0, top_p=0.9):
+def forecast_next(predictor, df, pred_len, lookback=400, holidays=(), sample_count=50, T=1.0, top_p=0.9):
     """Forecast the pred_len NEPSE trading days after the last row of df."""
     if len(df) < lookback:
         raise ValueError(f"Need at least {lookback} rows of history, got {len(df)}")
@@ -971,7 +971,7 @@ def main(argv=None):
     parser.add_argument("--out-dir", default="outputs/nepse")
     parser.add_argument("--pred-len", type=int, default=10)
     parser.add_argument("--lookback", type=int, default=400)
-    parser.add_argument("--sample-count", type=int, default=10)
+    parser.add_argument("--sample-count", type=int, default=50)
     parser.add_argument("--model", default="NeoQuasar/Kronos-small")
     parser.add_argument("--tokenizer", default="NeoQuasar/Kronos-Tokenizer-base")
     parser.add_argument("--device", default=None, help="cpu, mps or cuda:0 (auto-detected if omitted)")
@@ -1024,7 +1024,7 @@ git commit -m "feat(nepse): forecast next NEPSE trading days with Kronos"
 **Interfaces:**
 - Consumes: `FEATURES`, `load_predictor` (Task 5); clean CSVs (Task 4)
 - Produces:
-  - `walk_forward(predictor, df, lookback, pred_len, step, start_date=None, sample_count=5) -> pd.DataFrame` with columns `origin, target, last_close, pred_close, actual_close, pred_return, actual_return`
+  - `walk_forward(predictor, df, lookback, pred_len, step, start_date=None, sample_count=50) -> pd.DataFrame` with columns `origin, target, last_close, pred_close, actual_close, pred_return, actual_return`
   - `summarize(results) -> dict` with keys `windows, direction_accuracy, mape, naive_mape, rank_ic`
   - CLI `python -m nepse_kronos.backtest --symbol NEPSE` writing `outputs/nepse/backtest_<SYMBOL>.csv`
 
@@ -1104,7 +1104,7 @@ import pandas as pd
 from nepse_kronos.forecast import FEATURES, load_predictor
 
 
-def walk_forward(predictor, df, lookback, pred_len, step, start_date=None, sample_count=5):
+def walk_forward(predictor, df, lookback, pred_len, step, start_date=None, sample_count=50):
     """Forecast pred_len days from every step-th origin and compare with what really happened."""
     rows = []
     start = pd.Timestamp(start_date) if start_date is not None else None
@@ -1159,7 +1159,7 @@ def main(argv=None):
     parser.add_argument("--pred-len", type=int, default=5)
     parser.add_argument("--step", type=int, default=10)
     parser.add_argument("--start-date", default=None, help="Only evaluate origins on/after this date")
-    parser.add_argument("--sample-count", type=int, default=5)
+    parser.add_argument("--sample-count", type=int, default=50)
     parser.add_argument("--model", default="NeoQuasar/Kronos-small")
     parser.add_argument("--tokenizer", default="NeoQuasar/Kronos-Tokenizer-base")
     parser.add_argument("--device", default=None)

@@ -21,7 +21,7 @@ def main(argv=None):
     parser.add_argument("--out-dir", default="outputs/nepse")
     parser.add_argument("--pred-len", type=int, default=10)
     parser.add_argument("--lookback", type=int, default=400)
-    parser.add_argument("--sample-count", type=int, default=10)
+    parser.add_argument("--sample-count", type=int, default=50)
     parser.add_argument("--model", default="NeoQuasar/Kronos-small")
     parser.add_argument("--tokenizer", default="NeoQuasar/Kronos-Tokenizer-base")
     parser.add_argument("--device", default=None, help="cpu, mps or cuda:0 (auto-detected if omitted)")

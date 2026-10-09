@@ -18,7 +18,7 @@ def load_predictor(model_name="NeoQuasar/Kronos-small", tokenizer_name="NeoQuasa
     return KronosPredictor(model, tokenizer, device=device, max_context=max_context)
 
 
-def forecast_next(predictor, df, pred_len, lookback=400, holidays=(), sample_count=10, T=1.0, top_p=0.9):
+def forecast_next(predictor, df, pred_len, lookback=400, holidays=(), sample_count=50, T=1.0, top_p=0.9):
     """Forecast the pred_len NEPSE trading days after the last row of df."""
     if len(df) < lookback:
         raise ValueError(f"Need at least {lookback} rows of history, got {len(df)}")

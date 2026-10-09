@@ -14,7 +14,7 @@ import pandas as pd
 from nepse_kronos.forecast import FEATURES, load_predictor
 
 
-def walk_forward(predictor, df, lookback, pred_len, step, start_date=None, sample_count=5):
+def walk_forward(predictor, df, lookback, pred_len, step, start_date=None, sample_count=50):
     """Forecast pred_len days from every step-th origin and compare with what really happened."""
     rows = []
     start = pd.Timestamp(start_date) if start_date is not None else None
@@ -69,7 +69,7 @@ def main(argv=None):
     parser.add_argument("--pred-len", type=int, default=5)
     parser.add_argument("--step", type=int, default=10)
     parser.add_argument("--start-date", default=None, help="Only evaluate origins on/after this date")
-    parser.add_argument("--sample-count", type=int, default=5)
+    parser.add_argument("--sample-count", type=int, default=50)
     parser.add_argument("--model", default="NeoQuasar/Kronos-small")
     parser.add_argument("--tokenizer", default="NeoQuasar/Kronos-Tokenizer-base")
     parser.add_argument("--device", default=None)
