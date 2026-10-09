@@ -74,3 +74,9 @@ venv.bak/
 temp/
 tmp/
 .python-version
+
+# NEPSE pipeline (local data, weights, outputs)
+data/nepse/
+pretrained/
+finetuned/
+outputs/
