@@ -1369,7 +1369,7 @@ git commit -m "feat(nepse): fine-tuning config for daily NEPSE series"
 - Consumes: all CLIs from Tasks 4–7
 - Produces: an end-to-end guide
 
-- [ ] **Step 1: Write `nepse_kronos/README.md`**
+- [x] **Step 1: Write `nepse_kronos/README.md`**
 
 ````markdown
 # Kronos for NEPSE
@@ -1422,12 +1422,14 @@ python -m pytest tests/nepse_pipeline -v
 Forecasts are probabilistic research output, not investment advice.
 ````
 
-- [ ] **Step 2: Run the full NEPSE test suite**
+- [x] **Step 2: Run the full NEPSE test suite**
 
 Run: `python -m pytest tests/nepse_pipeline -v`
 Expected: 28 passed
 
-- [ ] **Step 3: Commit**
+> **Done (2026-10-04):** README written; it extends the template above with the Python 3.11 setup, the `fetch` step, the close-only trimming, option advice (`--lookback 128`, `--sample-count 50`) and a findings table. 28 tests pass. The README's NABIL example was run: 335 windows, mape 0.0335 vs naive 0.0283, direction 0.47, rank_ic 0.01 — no skill on that stock either.
+
+- [x] **Step 3: Commit**
 
 ```bash
 git add nepse_kronos/README.md
