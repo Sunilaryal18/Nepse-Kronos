@@ -155,6 +155,16 @@ def main(argv=None):
     (out / "reports").mkdir(parents=True, exist_ok=True)
     (out / "reports" / f"{latest:%Y-%m-%d}.md").write_text(text + "\n")
     trades.to_csv(out / "trades.csv", index=False, date_format="%Y-%m-%d")
+    # for the dashboard: daily value next to the index, and the position after the last close
+    pd.DataFrame({"portfolio": equity, "index": index_close.reindex(equity.index)}).rename_axis("timestamps").to_csv(
+        out / "equity.csv", date_format="%Y-%m-%d")
+    (out / "state.json").write_text(json.dumps({
+        "date": f"{latest:%Y-%m-%d}", "holdings": {s: int(n) for s, n in state["holdings"].items()},
+        "cash": float(state["cash"]), "unsettled": float(state["unsettled"]),
+        "sell_orders": state["sell_orders"], "buy_orders": [[s, float(b)] for s, b in state["buy_orders"]],
+        "exposure": float(extra["exposure"](latest)) if "exposure" in extra else None,
+        "top_k": config["top_k"], "next_refresh_in": int(config["refresh_every"] - days_since_refresh),
+        "features": features, "start": config["start"], "capital": config["capital"]}, indent=2))
     print(text)
 
 

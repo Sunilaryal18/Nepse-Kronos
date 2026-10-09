@@ -53,3 +53,16 @@ def test_features_are_saved_and_money_conditions_reported(tmp_path, ohlcv_factor
     assert json.loads((out / "config.json").read_text())["features"] == ["money", "sectors"]
     assert "Money conditions: invest in 2 of 4 slots" in printed   # score 0 -> 50%
     assert printed.count("BUY") == 2
+
+
+def test_saves_equity_and_state_for_the_dashboard(tmp_path, ohlcv_factory):
+    import pandas as pd
+    clean, out = tmp_path / "clean", tmp_path / "paper"
+    _write_market(clean, ohlcv_factory, 203)
+    main(["--clean-dir", str(clean), "--out-dir", str(out), "--no-update", "--min-history", "50", "--universe", "5",
+          "--top-k", "2", "--keep-rank", "3", "--features", "", "--meta-dir", str(tmp_path / "no-meta")])
+    equity = pd.read_csv(out / "equity.csv")
+    assert list(equity.columns) == ["timestamps", "portfolio", "index"]
+    state = json.loads((out / "state.json").read_text())
+    assert state["date"] == "2024-10-09" and state["top_k"] == 2 and state["exposure"] is None
+    assert len(state["buy_orders"]) == 2

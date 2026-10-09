@@ -238,3 +238,40 @@ if the Mac is asleep at 17:00 it runs on wake. Logs: `outputs/nepse/daily.log`.
 
     launchctl kickstart gui/$(id -u)/com.sunilaryal.nepse-kronos.daily     # run now
     launchctl bootout gui/$(id -u)/com.sunilaryal.nepse-kronos.daily       # stop the schedule
+
+## 10. Dashboard and daily picks
+
+    python -m nepse_kronos.dashboard --open      # after paper_trade; also built by the 5 pm job
+
+One page (`outputs/nepse/dashboard.html`, copied to `reports/paper/dashboard.html`): portfolio vs the NEPSE index
+(both start at 100), holdings, next-morning orders, today's top movers, money conditions, and **top 5 shares to
+consider at today's prices** — each with a candlestick chart (60 days, 20/50-day averages, support/resistance,
+buying range) and plain-English *Why* and *Risks*.
+
+How picks are chosen (`nepse_kronos/picks.py`, fixed before testing):
+- **Business:** latest *published* profit per share up >10% on the same quarter a year earlier, P/E ≤ 25,
+  price ≤ 2.5× book value, passes the quality and new-supply filters.
+- **Chart:** not in a falling trend (below a falling 50-day average); not overheated (RSI(14) ≤ 70, ≤ +15% in 20 days).
+- **Brokers:** the biggest net buyers not clearly avoiding it (≥ half the typical share's level).
+- Ranked calmest first. Buying range: from the lower of the last close and the 20-day average (not below the 20-day
+  low) to the last close + 1% (not above the 20-day high).
+- *Why/Risks* add dividend history, upcoming book closures and right shares, promoter unlocks, sector risks,
+  one-off profit jumps and closeness to the 52-week high.
+
+Track record (replayed quarterly, each pick held one year, late 2022–2025; `outputs/nepse/picks_track_record.csv`,
+rebuilt with `--refresh-record`): business-only screen 24 picks, beat the market 50%, +13.3% vs +12.2%;
+business + chart + brokers 22 picks, beat the market 45%, +13.9% vs +12.8%, made money 73%, worst −17%.
+The chart checks did not measurably improve results; they are kept to avoid buying into falling or overheated
+shares. Treat picks as sound, fairly priced candidates — not predictions or investment advice.
+
+## 11. Tracking your real holdings
+
+Put the shares you own in `data/nepse/my_holdings.csv` (git-ignored, never published):
+
+    symbol,units,buy_price,note
+    BHL,131,250,
+
+Use your **current** units (including bonus shares received) and **total amount paid ÷ current units** as `buy_price`.
+`python -m nepse_kronos.my_portfolio` prints value, gain/loss, today's move, take-home if sold today (after fees and
+10% tax on profit) and a health check per share (trend, RSI, 52-week position, P/E, profit growth). The local
+dashboard shows the same at the top; the copy published to GitHub (`dashboard_public.html`) leaves it out.

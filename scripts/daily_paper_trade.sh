@@ -13,6 +13,9 @@ if ! .venv311/bin/python -m nepse_kronos.paper_trade >/dev/null; then
     exit 1
 fi
 
+.venv311/bin/python -m nepse_kronos.dashboard >/dev/null || echo "dashboard failed (report still published)"
+[ -f outputs/nepse/dashboard_public.html ] && cp outputs/nepse/dashboard_public.html reports/paper/dashboard.html   # without your real holdings
+
 latest=$(ls -1 outputs/nepse/paper/reports/*.md | sort | tail -1)
 cp "$latest" reports/paper/
 cp "$latest" reports/paper/LATEST.md
