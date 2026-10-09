@@ -23,6 +23,19 @@ class StubPredictor:
 
     def __init__(self):
         self.calls = []
+        self.batch_calls = []
+
+    def predict_batch(self, df_list, x_timestamp_list, y_timestamp_list, pred_len, **kwargs):
+        """Like KronosPredictor.predict_batch; forecasts each series' close as last * (last / first)."""
+        if len({len(df) for df in df_list}) != 1:
+            raise ValueError("all series must have the same length")
+        self.batch_calls.append({"n": len(df_list), "pred_len": pred_len, **kwargs})
+        out = []
+        for df, y in zip(df_list, y_timestamp_list):
+            last = df.iloc[-1].copy()
+            last["close"] = last["close"] * df["close"].iloc[-1] / df["close"].iloc[0]
+            out.append(pd.DataFrame([last.to_numpy()] * pred_len, columns=df.columns, index=pd.DatetimeIndex(y)))
+        return out
 
     def predict(self, df, x_timestamp, y_timestamp, pred_len, **kwargs):
         self.calls.append({"df": df, "x_timestamp": x_timestamp, "y_timestamp": y_timestamp,
