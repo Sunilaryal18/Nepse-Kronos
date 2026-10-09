@@ -18,7 +18,7 @@ import pandas as pd
 
 SOURCE_REPO = "https://github.com/socrateai-official/nepse-open-data.git"
 DEFAULT_SOURCE_DIR = Path("data/nepse/source/nepse-open-data")
-PRICE_FOLDERS = ["ohlc_index", "ohlc_adjusted_stock"]
+PRICE_FOLDERS = ["ohlc_index", "ohlc_adjusted_stock", "ohlc_unadjusted_stock"]  # unadjusted: to spot missed adjustments
 COLUMNS = ["date", "open", "high", "low", "close", "volume", "symbol"]
 
 
