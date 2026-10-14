@@ -1,0 +1,22 @@
+{
+  "start": "2026-10-02",
+  "capital": 1000000.0,
+  "signal": "lowvol",
+  "window": 60,
+  "universe": 150,
+  "min_history": 128,
+  "top_k": 20,
+  "keep_rank": 50,
+  "refresh_every": 10,
+  "stop_loss": null,
+  "time_limit": null,
+  "features": [
+    "money",
+    "sectors",
+    "supply",
+    "taxwait",
+    "quality",
+    "broker",
+    "interest"
+  ]
+}
