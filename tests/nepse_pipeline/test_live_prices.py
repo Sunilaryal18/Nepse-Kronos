@@ -67,3 +67,17 @@ def test_update_live_with_nothing_new(tmp_path):
     written = update_live(FakeClient(), ["NABIL"], since=pd.Timestamp("2026-10-06"), live_dir=tmp_path,
                           today=pd.Timestamp("2026-10-06"))
     assert written == {"NEPSE_INDEX": 0, "NABIL": 0}
+
+
+def test_symbols_to_fetch_includes_paper_trades_and_real_holdings(tmp_path):
+    from nepse_kronos.live_prices import symbols_to_fetch
+    clean = tmp_path / "clean"
+    clean.mkdir()
+    for k, amount in enumerate([5.0, 4.0, 3.0]):
+        pd.DataFrame({"amount": [amount] * 5}).to_csv(clean / f"S{k}.csv", index=False)
+    pd.DataFrame({"amount": [1.0] * 5}).to_csv(clean / "NEPSE_INDEX.csv", index=False)
+    trades = tmp_path / "trades.csv"
+    pd.DataFrame({"symbol": ["S2"]}).to_csv(trades, index=False)
+    holdings = tmp_path / "my_holdings.csv"
+    pd.DataFrame({"symbol": ["ehpl"], "units": [200], "buy_price": [450]}).to_csv(holdings, index=False)
+    assert symbols_to_fetch(clean, top=1, also_from=[trades, holdings, tmp_path / "missing.csv"]) == ["EHPL", "S0", "S2"]

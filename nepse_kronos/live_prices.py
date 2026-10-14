@@ -6,7 +6,7 @@ close. Rows are written to data/nepse/live/<SYMBOL>.csv only for days after the 
 `nepse_kronos.history` appends them, and they are ignored once the community data catches up.
 
 Usage:
-    python -m nepse_kronos.live_prices            # ~200 most-traded shares + paper-portfolio holdings
+    python -m nepse_kronos.live_prices            # ~200 most-traded shares + paper-portfolio and real holdings
 """
 import argparse
 import logging
@@ -96,8 +96,9 @@ def update_live(client, symbols, since, live_dir=LIVE_DIR, today=None):
     return written
 
 
-def symbols_to_fetch(clean_dir, top=200, also_from=None):
-    """The most-traded shares (median turnover, last 60 days) plus any symbol in a trades file."""
+def symbols_to_fetch(clean_dir, top=200, also_from=()):
+    """The most-traded shares (median turnover, last 60 days) plus every symbol listed in `also_from` files
+    (paper-portfolio trades, your real holdings), so nothing you hold goes stale."""
     turnover = {}
     for path in Path(clean_dir).glob("*.csv"):
         if path.stem.endswith("_INDEX"):
@@ -105,8 +106,9 @@ def symbols_to_fetch(clean_dir, top=200, also_from=None):
         tail = pd.read_csv(path, usecols=["amount"]).tail(60)
         turnover[path.stem] = tail["amount"].median()
     chosen = set(sorted(turnover, key=lambda s: -(turnover[s] or 0))[:top])
-    if also_from and Path(also_from).exists():
-        chosen |= set(pd.read_csv(also_from)["symbol"].dropna())
+    for extra in also_from or ():
+        if Path(extra).exists():
+            chosen |= set(pd.read_csv(extra)["symbol"].dropna().str.strip().str.upper())
     return sorted(chosen)
 
 
@@ -115,7 +117,8 @@ def main(argv=None):
     parser.add_argument("--clean-dir", default="data/nepse/clean", help="community data; new days start after it")
     parser.add_argument("--live-dir", default=str(LIVE_DIR))
     parser.add_argument("--top", type=int, default=200)
-    parser.add_argument("--also-from", default="outputs/nepse/paper/trades.csv")
+    parser.add_argument("--also-from", nargs="*", default=["outputs/nepse/paper/trades.csv", "portfolio/my_holdings.csv"],
+                        help="files with a symbol column whose shares are always fetched")
     parser.add_argument("--min-interval", type=float, default=1.0)
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

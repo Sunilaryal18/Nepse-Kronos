@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from nepse_kronos.forecast import FEATURES
 
 SIMPLE_SIGNALS = {"momentum", "steady", "lowvol"}
 
@@ -15,6 +14,7 @@ def _series(values):
 
 def kronos_signal(predictor, panel, symbols, as_of, future_dates, lookback=128, sample_count=10, batch_size=32):
     """Kronos-predicted return from the as_of close to the close on the last future date."""
+    from nepse_kronos.forecast import FEATURES  # loads the Kronos model (PyTorch); only needed here
     as_of = pd.Timestamp(as_of)
     future = pd.Series(pd.DatetimeIndex(future_dates))
     ready = [(s, panel[s].loc[:as_of].iloc[-lookback:]) for s in symbols]

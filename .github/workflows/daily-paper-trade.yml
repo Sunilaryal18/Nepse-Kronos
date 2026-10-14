@@ -1,0 +1,89 @@
+name: Daily paper trade
+
+# Every NEPSE weekday after the close: update the data, run the paper portfolio, commit the HTML report
+# to reports/paper/ and publish that folder on GitHub Pages (https://sunilaryal18.github.io/Nepse-Kronos/).
+# The data the job keeps between runs is stored encrypted as an asset of the "data-store" release; the key is the NEPSE_DATA_KEY repository secret.
+on:
+  schedule:
+    - cron: "20 11 * * 1-5"   # 17:05 Nepal time (UTC+5:45), Monday to Friday
+    - cron: "35 1 1 * *"      # 07:20 Nepal time on the 1st: also refresh company reports and ShareSansar lists
+  workflow_dispatch:
+    inputs:
+      slow:
+        description: "Also refresh company reports and ShareSansar lists (slow)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: daily-paper-trade   # never two runs on the same stored data
+  cancel-in-progress: false
+
+env:
+  STORE_TAG: data-store
+  STORE_FILE: nepse-data.tar.gz.enc
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-daily.txt
+
+      - name: Install
+        run: pip install -r requirements-daily.txt
+
+      - name: Restore stored data
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEPSE_DATA_KEY: ${{ secrets.NEPSE_DATA_KEY }}
+        run: |
+          gh release download "$STORE_TAG" --pattern "$STORE_FILE" --dir "$RUNNER_TEMP"
+          scripts/data_bundle.sh unpack "$RUNNER_TEMP/$STORE_FILE"
+
+      - name: Update data and run the paper portfolio
+        run: |
+          slow=""
+          if [ "${{ github.event.schedule }}" = "35 1 1 * *" ] || [ "${{ inputs.slow }}" = "true" ]; then slow="--update-slow"; fi
+          python -m nepse_kronos.paper_trade $slow
+          python -m nepse_kronos.dashboard
+
+      - name: Save stored data
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEPSE_DATA_KEY: ${{ secrets.NEPSE_DATA_KEY }}
+        run: |
+          scripts/data_bundle.sh pack "$RUNNER_TEMP/$STORE_FILE"
+          gh release upload "$STORE_TAG" "$RUNNER_TEMP/$STORE_FILE" --clobber
+
+      - name: Publish the report
+        run: |
+          day=$(scripts/publish_report.sh)
+          git add reports/paper
+          if git diff --cached --quiet; then echo "No new trading day; nothing to publish"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -m "Daily paper report $day"
+          git pull -q --rebase origin "${GITHUB_REF_NAME}"
+          git push -q origin "HEAD:${GITHUB_REF_NAME}"
+          echo "Published $day"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: reports/paper
+      - id: deploy
+        uses: actions/deploy-pages@v4

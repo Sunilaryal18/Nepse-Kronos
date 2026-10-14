@@ -18,16 +18,17 @@ def test_line_chart_indexes_both_series_to_100_and_labels_them():
 
 def test_render_contains_every_section():
     state = {"date": "2026-10-08", "holdings": {"NBL": 100}, "cash": 150_000.0, "unsettled": 0.0,
-             "sell_orders": {}, "buy_orders": [], "exposure": 0.83, "top_k": 20, "next_refresh_in": 5,
+             "sell_orders": {"SCB": "no longer among the calmest 50"}, "buy_orders": [], "exposure": 0.83, "top_k": 20,
+             "next_refresh_in": 5,
              "start": "2026-10-02", "capital": 1_000_000.0, "features": ["money"]}
-    holdings = pd.DataFrame({"symbol": ["NBL"], "sector": ["Commercial Bank"], "units": [100], "bought": [290.0],
-                             "last": [297.0]})
+    holdings = pd.DataFrame({"symbol": ["NBL", "SCB"], "sector": ["Commercial Bank"] * 2, "units": [100, 70],
+                             "bought": [290.0, 664.0], "last": [297.0, 670.0], "today": [0.012, -0.003]})
     picks = pd.DataFrame({"symbol": ["NTC"], "sector": ["Others"], "price": [902.0], "buy_low": [895.0],
                           "buy_high": [911.0], "eps_growth": [0.2], "pe": [18.3], "pb": [1.6], "volatility": [0.01]})
     movers = pd.DataFrame({"symbol": ["SIKLES", "SAPIL"], "sector": ["Hydropower", "Manufacturing"],
                            "close": [590.0, 1136.0], "change": [0.034, -0.049]})
     page = render(state, _equity(), holdings, picks, movers, next_day=pd.Timestamp("2026-10-12"))
-    for text in ["Your portfolio", "NBL", "+2.4%", "Nothing to do", "Top 5 to consider", "NTC", "Rs 895.0 – 911.0",
+    for text in ["Your portfolio", "NBL", "+2.4%", "+1.2%", "Hold", "Sell tomorrow: no longer among the calmest 50", "Top 5 to consider", "NTC", "Rs 895.0 – 911.0",
                  "SIKLES", "SAPIL", "17 of 20", "not investment advice", "2026-10-12"]:
         assert text in page, text
     assert "▲" in page and "▼" in page                                # gains/losses not shown by colour alone
@@ -64,7 +65,7 @@ def test_my_portfolio_section_only_when_given():
              "buy_orders": [], "exposure": None, "top_k": 20, "next_refresh_in": 5, "start": "2026-10-02",
              "capital": 1_000_000.0, "features": []}
     empty = lambda cols: pd.DataFrame(columns=cols)
-    args = (state, _equity(), empty(["symbol", "sector", "units", "bought", "last"]),
+    args = (state, _equity(), empty(["symbol", "sector", "units", "bought", "last", "today"]),
             empty(["symbol", "sector", "price", "buy_low", "buy_high", "eps_growth", "pe", "pb", "volatility"]),
             empty(["symbol", "sector", "close", "change"]), pd.Timestamp("2026-10-12"))
     mine = {"rows": pd.DataFrame({"symbol": ["BHL"], "sector": ["Hydropower"], "units": [131], "buy_price": [250.0],

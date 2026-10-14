@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from nepse_kronos import brokers
-from nepse_kronos.brokers import (broker_features, daily_broker_stats, load_daily_stats, main,
+from nepse_kronos.brokers import (broker_features, checkout_patterns, daily_broker_stats, load_daily_stats, main,
                                   process_floorsheets, read_floorsheet)
 
 HEADER = "transaction,symbol,buyer,seller,quantity,rate,amount,date\n"
@@ -153,3 +153,11 @@ def test_main_writes_feature_file(tmp_path):
     assert list(df.columns) == ["date", "symbol", "top5_net_buy", "buyer_hhi", "seller_hhi", "trades"]
     assert df.iloc[0].tolist() == ["2024-01-01", "A", 1.0, 0.5, 1.0, 2]
     assert np.isfinite(df[["top5_net_buy", "buyer_hhi", "seller_hhi"]].to_numpy()).all()
+
+
+def test_checkout_patterns_cover_only_uncached_months(tmp_path):
+    assert checkout_patterns(tmp_path) == ["/floorsheet/"]                     # empty cache: whole folder
+    for day in ["2024-01-02", "2026-08-30", "2026-09-02"]:
+        (tmp_path / f"{day}.csv.gz").touch()
+    assert checkout_patterns(tmp_path, today="2026-10-14") == [
+        "/floorsheet/floorsheet_2026-09-*.csv", "/floorsheet/floorsheet_2026-10-*.csv"]

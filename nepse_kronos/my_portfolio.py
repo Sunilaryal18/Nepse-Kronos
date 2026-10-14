@@ -1,6 +1,6 @@
 """Track the shares you actually own: value, gain or loss, today's move, take-home if sold, and a health check.
 
-Holdings live in data/nepse/my_holdings.csv (git-ignored, never published):
+Holdings live in portfolio/my_holdings.csv (committed, and shown in the published daily report):
     symbol,units,buy_price,note
 
 Usage:
@@ -16,7 +16,7 @@ from nepse_kronos.investor_backtest import load_sectors, tradable_stocks
 from nepse_kronos.picks import _profit_growth, technicals
 from nepse_kronos.universe import load_panel
 
-HOLDINGS = Path("data/nepse/my_holdings.csv")
+HOLDINGS = Path("portfolio/my_holdings.csv")
 COLUMNS = ["symbol", "sector", "units", "buy_price", "last", "last_date", "cost", "value", "gain", "gain_pct",
            "day_change", "note"]
 

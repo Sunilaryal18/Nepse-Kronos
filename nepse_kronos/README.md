@@ -229,11 +229,29 @@ Caveats: the delisted series rely on our own adjustments plus gap repair; qualit
 
 **Verdict:** the reliable benefit is *much smaller crashes* with roughly market-like or modestly better returns; the size of the extra return is uncertain and comes mostly from avoiding the 2018 and 2022 falls and earning interest while out of the market.
 
-### Automatic daily run (macOS)
+### Automatic daily run (GitHub Actions)
 
-`scripts/daily_paper_trade.sh` runs the full update + paper portfolio and publishes that day's report to
-`reports/paper/` (`LATEST.md`, one file per trading day, `trades.csv`) in the personal GitHub repo. It is scheduled
-by `~/Library/LaunchAgents/com.sunilaryal.nepse-kronos.daily.plist` for Monday–Friday at 17:00 (Mac local time);
+`.github/workflows/daily-paper-trade.yml` runs on GitHub every Monday to Friday at about 17:05 Nepal time (GitHub
+can start scheduled jobs late, and under heavy load skip one). It updates the data, runs the paper portfolio and
+commits that day's HTML report to `reports/paper/` (`index.html` for the latest, `<date>.html` for each day,
+plus `trades.csv` and `config.json`) and publishes the folder on GitHub Pages at
+https://sunilaryal18.github.io/Nepse-Kronos/. On the 1st of each month it also refreshes company reports and ShareSansar lists.
+
+The data kept between runs (company reports, dividends, broker summaries, NRB data, the paper portfolio's
+rankings) is packed by `scripts/data_bundle.sh`, encrypted with the `NEPSE_DATA_KEY` secret and stored as the
+asset of the `data-store` release, so the collected data isn't readable by the public. Prices are downloaded
+fresh each run, and broker files only for months not processed yet. The job needs no PyTorch
+(`requirements-daily.txt`) and takes about 5 minutes.
+
+One-time setup, from the Mac: install `gh`, run `gh auth login` with the personal account, push this repo, then
+`scripts/setup_cloud.sh`. It creates the key (kept in `~/.config/nepse-kronos/data_key`), sets the secret, uploads
+the Mac's data and starts the first run. Run it again to replace the stored data with the Mac's copy.
+To run the job by hand: Actions tab, "Daily paper trade", "Run workflow".
+
+### Local daily run (macOS)
+
+`scripts/daily_paper_trade.sh` does the same update on the Mac and rebuilds the local copy of the report, then
+pulls the published reports. It doesn't publish. It is scheduled by `~/Library/LaunchAgents/com.sunilaryal.nepse-kronos.daily.plist` for Monday–Friday at 17:00 (Mac local time);
 if the Mac is asleep at 17:00 it runs on wake. Logs: `outputs/nepse/daily.log`.
 
     launchctl kickstart gui/$(id -u)/com.sunilaryal.nepse-kronos.daily     # run now
@@ -266,12 +284,12 @@ shares. Treat picks as sound, fairly priced candidates — not predictions or in
 
 ## 11. Tracking your real holdings
 
-Put the shares you own in `data/nepse/my_holdings.csv` (git-ignored, never published):
+Put the shares you own in `portfolio/my_holdings.csv` (committed; they appear in the published daily report):
 
     symbol,units,buy_price,note
     BHL,131,250,
 
 Use your **current** units (including bonus shares received) and **total amount paid ÷ current units** as `buy_price`.
 `python -m nepse_kronos.my_portfolio` prints value, gain/loss, today's move, take-home if sold today (after fees and
-10% tax on profit) and a health check per share (trend, RSI, 52-week position, P/E, profit growth). The local
-dashboard shows the same at the top; the copy published to GitHub (`dashboard_public.html`) leaves it out.
+10% tax on profit) and a health check per share (trend, RSI, 52-week position, P/E, profit growth). The daily
+HTML report shows the same at the top.

@@ -1,0 +1,7 @@
+# Just what the daily cloud job needs (no PyTorch / Kronos model)
+numpy==2.4.6
+pandas==2.2.2
+requests==2.34.2
+openpyxl==3.1.5
+pyyaml
+nepse @ git+https://github.com/basic-bgnr/NepseUnofficialApi@180a550

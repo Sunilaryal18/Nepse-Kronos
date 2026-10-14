@@ -5,7 +5,8 @@ one file per trading day from 2024-01, columns
 `transaction,symbol,buyer,seller,quantity,rate,amount,date` (buyer/seller are broker numbers).
 
 Pipeline:
-1. `sync_floorsheet` keeps a separate sparse clone holding only the floorsheet folder.
+1. `sync_floorsheet` keeps a separate sparse clone holding only the floorsheet files of months not yet
+   cached (the whole folder on the first run), so a fresh machine downloads days, not the full 3 GB.
 2. Each day's file is reduced by `daily_broker_stats` to per-(symbol, broker) bought/sold units and
    cached as `floorsheet_daily/YYYY-MM-DD.csv.gz`; days already cached are skipped on re-runs.
 3. `broker_features` rolls the cached days over the last `window` trading days of each symbol
@@ -39,8 +40,17 @@ STAT_COLUMNS = ["date", "symbol", "broker", "bought", "sold", "buy_trades"]
 FEATURE_COLUMNS = ["date", "symbol", "top5_net_buy", "buyer_hhi", "seller_hhi", "trades"]
 
 
-def sync_floorsheet(repo_dir=DEFAULT_REPO_DIR):
-    """Clone the dataset (floorsheet folder only) or update an existing clone to the latest commit."""
+def checkout_patterns(cache_dir=DEFAULT_CACHE_DIR, today=None):
+    """Sparse-checkout patterns: floorsheet files from the last cached month to now (whole folder if no cache)."""
+    days = sorted(p.name[:10] for p in Path(cache_dir).glob("*.csv.gz"))
+    if not days:
+        return [f"/{FLOORSHEET_FOLDER}/"]
+    months = pd.period_range(days[-1][:7], pd.Timestamp(today or pd.Timestamp.today()).strftime("%Y-%m"), freq="M")
+    return [f"/{FLOORSHEET_FOLDER}/floorsheet_{m}-*.csv" for m in months]
+
+
+def sync_floorsheet(repo_dir=DEFAULT_REPO_DIR, cache_dir=DEFAULT_CACHE_DIR):
+    """Clone the dataset or update an existing clone, checking out only the floorsheet files still needed."""
     repo_dir = Path(repo_dir)
     git = ["git", "-C", str(repo_dir)]
     if (repo_dir / ".git").exists():
@@ -50,7 +60,7 @@ def sync_floorsheet(repo_dir=DEFAULT_REPO_DIR):
         repo_dir.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(["git", "clone", "--quiet", "--depth", "1", "--filter=blob:none", "--sparse",
                         SOURCE_REPO, str(repo_dir)], check=True)
-    subprocess.run([*git, "sparse-checkout", "set", FLOORSHEET_FOLDER], check=True)
+    subprocess.run([*git, "sparse-checkout", "set", "--no-cone", *checkout_patterns(cache_dir)], check=True)
 
 
 def read_floorsheet(path):
@@ -186,7 +196,7 @@ def build(repo_dir=DEFAULT_REPO_DIR, cache_dir=DEFAULT_CACHE_DIR, out=DEFAULT_OU
           log=print):
     """Sync, process new days, rebuild the features file; returns (features, processed, malformed)."""
     if sync:
-        sync_floorsheet(repo_dir)
+        sync_floorsheet(repo_dir, cache_dir)
     processed, malformed = process_floorsheets(Path(repo_dir) / FLOORSHEET_FOLDER, cache_dir, log=log)
     log(f"processed {len(processed)} new day(s); {len(malformed)} malformed")
     feats = broker_features(load_daily_stats(cache_dir), window=window)

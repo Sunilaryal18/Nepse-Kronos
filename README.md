@@ -16,12 +16,13 @@ The backtester charges broker commission, the SEBON fee, the DP charge and capit
 next day's open, the ±10% daily price limit and T+2 settlement apply, and no data is used before it was published.
 The benchmark is the NEPSE index plus an estimate of its dividends, because the share prices already include them.
 
-A paper portfolio runs every weekday at 5 pm and publishes its report here, in `reports/paper/`.
+A paper portfolio runs on GitHub every weekday after the market closes. Its report is one web page, at
+https://sunilaryal18.github.io/Nepse-Kronos/, and each day's copy is kept in `reports/paper/`.
 
 The dashboard shows the paper portfolio against the index, tomorrow's orders, the day's biggest movers, and five
 shares worth a look at today's prices. Each of those comes with a candlestick chart and a short list of reasons and
-risks. If you add your own holdings, the local copy of the dashboard shows them too, with a health check for each
-share. That part never gets published.
+risks. My own shares are at the top of the page, each with its gain or loss and a health check. They're listed in
+`portfolio/my_holdings.csv`.
 
 ## Getting started
 
@@ -49,8 +50,8 @@ python -m nepse_kronos.dashboard --open      # dashboard
 |---|---|
 | Update the data and the paper portfolio | `python -m nepse_kronos.paper_trade` (add `--update-slow` once a month) |
 | Open the dashboard | `python -m nepse_kronos.dashboard --open` |
-| Check your own shares | list them in `data/nepse/my_holdings.csv`, then run `python -m nepse_kronos.my_portfolio` |
-| Run it every weekday at 5 pm | `scripts/daily_paper_trade.sh` plus a launchd job, see [the guide](nepse_kronos/README.md#automatic-daily-run-macos) |
+| Check your own shares | list them in `portfolio/my_holdings.csv`, then run `python -m nepse_kronos.my_portfolio` |
+| Run it every weekday on GitHub | `.github/workflows/daily-paper-trade.yml`, set up once with `scripts/setup_cloud.sh`, see [the guide](nepse_kronos/README.md#automatic-daily-run-github-actions) |
 | Backtest a strategy | `python -m nepse_kronos.investor_backtest --features money,sectors,supply,taxwait,interest` |
 
 ## How the paper portfolio picks shares
@@ -112,8 +113,10 @@ published, and NRB figures from about 40 days after the month they describe.
 nepse_kronos/          the NEPSE code: data collectors, price build, strategy rules, trading engine,
                        backtests, paper trading, picks, dashboard and holdings tracker (see its README)
 tests/nepse_pipeline/  tests for all of it, no network needed
-scripts/               the 5 pm job
-reports/paper/         published daily reports and dashboard
+scripts/               the daily job, its encrypted data store and one-time cloud setup
+.github/workflows/     the daily GitHub Actions job
+reports/paper/         published daily reports (index.html is the latest)
+portfolio/             my own holdings, shown in the daily report
 model/                 the Kronos model (from the original project)
 finetune/, finetune_csv/, examples/, webui/   Kronos training code, examples and web UI
 docs/KRONOS.md         the original Kronos README

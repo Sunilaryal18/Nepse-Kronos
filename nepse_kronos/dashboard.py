@@ -1,4 +1,5 @@
-"""One-page NEPSE dashboard: paper portfolio vs the market, holdings, orders, shares to consider, top movers.
+"""The daily NEPSE report, one HTML page: your real holdings, the paper portfolio vs the market, its holdings,
+orders, shares to consider and top movers.
 
 Usage:
     python -m nepse_kronos.dashboard             # writes outputs/nepse/dashboard.html (run after paper_trade)
@@ -46,6 +47,7 @@ h1 { font-size: 22px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 32px 0 8p
 table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
 th { text-align: left; color: var(--text-secondary); font-weight: 500; font-size: 12px; border-bottom: 1px solid var(--rule); padding: 6px 8px; }
 td { padding: 6px 8px; border-bottom: 1px solid var(--grid); } td.num, th.num { text-align: right; white-space: nowrap; }
+td.wide { min-width: 260px; }
 .up { color: var(--good); } .down { color: var(--critical); }
 .note { color: var(--text-secondary); font-size: 13px; margin: 8px 0 0; }
 .legend { display: flex; gap: 16px; color: var(--text-secondary); font-size: 12px; margin-bottom: 6px; }
@@ -223,14 +225,14 @@ def _mine_section(mine):
         notes = " ".join(mine["notes"].get(r.symbol, [])) + (f" [{r.note}]" if r.note else "")
         rows.append([_cell(r.symbol), _cell(r.sector), _cell(f"{r.units}", True), _cell(f"{r.buy_price:,.1f}", True),
                      _cell(f"{r.last:,.1f}", True), _cell(f"{r.value:,.0f}", True),
-                     _cell(f"{r.gain:+,.0f} ({_pct(r.gain_pct)})", True), _cell(_move(r.day_change), True), _cell(notes)])
+                     _cell(f"{r.gain:+,.0f} ({_pct(r.gain_pct)})", True), _cell(_move(r.day_change), True),
+                     f'<td class="wide">{html.escape(notes)}</td>'])
     unpriced = f"<p class='note'>No price data for: {', '.join(t['unpriced'])}.</p>" if t["unpriced"] else ""
-    return (f'<h2>My real portfolio</h2><div class="tiles">'
+    return (f'<h2>My real portfolio ({len(mine["rows"])} shares)</h2><div class="tiles">'
             + "".join(f'<div class="tile"><div class="label">{l}</div><div class="value">{v}</div></div>' for l, v in tiles)
             + '</div><div class="card" style="margin-top:12px">'
             + _table(["Share", "Sector", "#Units", "#Bought at", "#Last", "#Value (Rs)", "#Gain / loss", "#Today", "Health check"], rows)
-            + f'{unpriced}<p class="note">Take-home: after broker fees, SEBON fee, DP charge and 10% tax on any profit. '
-              'Only on this computer — never published.</p></div>')
+            + f'{unpriced}<p class="note">Take-home: after broker fees, SEBON fee, DP charge and 10% tax on any profit.</p></div>')
 
 
 def render(state, equity, holdings, picks, movers, next_day, details=None, record=None, mine=None):
@@ -246,9 +248,10 @@ def render(state, equity, holdings, picks, movers, next_day, details=None, recor
 
     holding_rows = []
     for h in holdings.sort_values("symbol").itertuples():
+        status = f"Sell tomorrow: {state['sell_orders'][h.symbol]}" if h.symbol in state["sell_orders"] else "Hold"
         holding_rows.append([_cell(h.symbol), _cell(h.sector), _cell(f"{h.units}", True), _cell(f"{h.bought:,.1f}", True),
                              _cell(f"{h.last:,.1f}", True), _cell(f"{h.units * h.last:,.0f}", True),
-                             _cell(_move(h.last / h.bought - 1), True)])
+                             _cell(_move(h.last / h.bought - 1), True), _cell(_move(h.today), True), _cell(status)])
     orders = [f"<li>SELL all of {html.escape(s)} — {html.escape(r)}</li>" for s, r in sorted(state["sell_orders"].items())]
     orders += [f"<li>BUY {html.escape(s)} for about Rs {b:,.0f}</li>" for s, b in state["buy_orders"]]
 
@@ -262,9 +265,9 @@ def render(state, equity, holdings, picks, movers, next_day, details=None, recor
     losers = movers[movers["change"] < 0].sort_values("change").head(5)
 
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>NEPSE dashboard {state['date']}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>NEPSE daily report {state['date']}</title>
 <style>{STYLE}</style></head><body><main class="viz-root">
-<h1>NEPSE dashboard — {state['date']}</h1>
+<h1>NEPSE daily report — {state['date']}</h1>
 <p class="sub">Paper portfolio started {state['start']} with Rs {state['capital']:,.0f} (pretend money).
 Rules: calmest shares + {html.escape(', '.join(state.get('features') or []) or 'nothing extra')}.</p>
 {_mine_section(mine)}
@@ -277,7 +280,7 @@ Rules: calmest shares + {html.escape(', '.join(state.get('features') or []) or '
 <div class="chart">{line_chart(equity)}<div class="tip"></div></div></div>
 
 <h2>Holdings ({len(holdings)} shares · cash Rs {state['cash']:,.0f})</h2>
-<div class="card">{_table(["Share", "Sector", "#Units", "#Bought at", "#Last", "#Value (Rs)", "#Change"], holding_rows)}</div>
+<div class="card">{_table(["Share", "Sector", "#Units", "#Bought at", "#Last", "#Value (Rs)", "#Since buying", "#Today", "Status"], holding_rows)}</div>
 
 <h2>Orders for the next trading morning ({next_day:%a %Y-%m-%d})</h2>
 <div class="card">{'<ul>' + ''.join(orders) + '</ul>' if orders else '<p>Nothing to do.</p>'}
@@ -318,9 +321,7 @@ def main(argv=None):
     parser.add_argument("--record", default="outputs/nepse/picks_track_record.csv",
                         help="cached replay of the screen on past data (rebuilt with --refresh-record)")
     parser.add_argument("--refresh-record", action="store_true")
-    parser.add_argument("--holdings", default=str(HOLDINGS), help="your real holdings (shown only on the local page)")
-    parser.add_argument("--public-out", default="outputs/nepse/dashboard_public.html",
-                        help="copy without your real holdings, for publishing")
+    parser.add_argument("--holdings", default=str(HOLDINGS), help="your real holdings (left out if the file is missing)")
     args = parser.parse_args(argv)
 
     paper, meta = Path(args.paper_dir), Path(args.meta_dir)
@@ -332,10 +333,11 @@ def main(argv=None):
     latest = pd.Timestamp(state["date"])
 
     bought = trades[trades["side"] == "buy"].groupby("symbol")["price"].last()
+    closes = {s: stocks[s]["close"].loc[:latest] for s in state["holdings"]}
     holdings = pd.DataFrame([{"symbol": s, "sector": sectors.get(s, ""), "units": n, "bought": bought.get(s, float("nan")),
-                              "last": stocks[s]["close"].loc[:latest].iloc[-1]}
+                              "last": closes[s].iloc[-1], "today": closes[s].iloc[-1] / closes[s].iloc[-2] - 1}
                              for s, n in state["holdings"].items()],
-                            columns=["symbol", "sector", "units", "bought", "last"])
+                            columns=["symbol", "sector", "units", "bought", "last", "today"])
 
     reports = pd.read_csv(meta / "fundamentals.csv")
     blocks = [quality_blocklist(reports, stocks),
@@ -381,8 +383,7 @@ def main(argv=None):
         mine = {"rows": valued, "total": summarize(valued, CostModel()),
                 "notes": {s: health_notes(s, stocks, reports, latest) for s in valued["symbol"]}}
     out.write_text(render(state, equity, holdings, picks, movers, next_day, details, record, mine))
-    Path(args.public_out).write_text(render(state, equity, holdings, picks, movers, next_day, details, record))
-    print(f"Wrote {out} (with your holdings) and {args.public_out} (without)")
+    print(f"Wrote {out}")
     if args.open:
         subprocess.run(["open", str(out)], check=False)
 
