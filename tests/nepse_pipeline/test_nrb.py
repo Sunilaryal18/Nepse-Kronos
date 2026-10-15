@@ -125,3 +125,12 @@ def test_main_offline(tmp_path):
     df = pd.read_csv(out)
     assert list(df.columns) == nrb.COLUMNS
     assert df.loc[0, "month"] == "2016-08-16" and df.loc[0, "available_from"] == "2016-09-25"
+
+
+def test_find_sheet_accepts_the_renamed_interest_sheet():
+    wb = openpyxl.Workbook()
+    for name in ["22(A).X_BEC", "22.Interest Rates- monthly se"]:
+        wb.create_sheet(name)
+    assert nrb._find_sheet(wb, nrb.INTEREST_SHEET).title == "22.Interest Rates- monthly se"
+    with pytest.raises(KeyError):
+        nrb._find_sheet(wb, "A7.")

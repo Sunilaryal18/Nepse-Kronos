@@ -42,7 +42,7 @@ USER_AGENT = "Kronos-NEPSE-research/1.0 (personal research; polite crawler, 1 re
 DEFAULT_CACHE = Path("data/nepse/source/nrb")
 DEFAULT_OUT = Path("data/nepse/meta/macro_monthly.csv")
 
-INTEREST_SHEET = "A22"
+INTEREST_SHEET = ("A22", "22.Interest")   # renamed in the Bhadra 2083 file
 BOP_SHEET = "A7."
 CD_SHEET = "C18"
 AVAILABLE_LAG_DAYS = 40
@@ -101,11 +101,13 @@ def _to_number(value):
         return np.nan  # "-", "", "n.a." etc.
 
 
-def _find_sheet(workbook, prefix):
+def _find_sheet(workbook, prefixes):
+    """First sheet whose name starts with one of `prefixes` (a string or a tuple of them), ignoring case."""
+    prefixes = (prefixes,) if isinstance(prefixes, str) else prefixes
     for name in workbook.sheetnames:
-        if name.strip().lower().startswith(prefix.lower()):
+        if name.strip().lower().startswith(tuple(p.lower() for p in prefixes)):
             return workbook[name]
-    raise KeyError(f"no sheet starting with {prefix!r} in {workbook.sheetnames}")
+    raise KeyError(f"no sheet starting with {prefixes!r} in {workbook.sheetnames}")
 
 
 def _norm(text):

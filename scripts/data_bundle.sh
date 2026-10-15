@@ -16,7 +16,8 @@ PATHS=(data/nepse/meta data/nepse/live data/nepse/source/floorsheet_daily data/n
 case "${1:-}" in
   pack)
     existing=(); for p in "${PATHS[@]}"; do [ -e "$p" ] && existing+=("$p"); done
-    tar -czf - --exclude='.git' "${existing[@]}" |
+    # COPYFILE_DISABLE stops macOS tar adding ._ metadata files, which the job would try to read as data
+    COPYFILE_DISABLE=1 tar -czf - --exclude='.git' --exclude='._*' "${existing[@]}" |
       openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:NEPSE_DATA_KEY -out "$2"
     echo "packed ${#existing[@]} paths into $2 ($(du -h "$2" | cut -f1))" ;;
   unpack)
