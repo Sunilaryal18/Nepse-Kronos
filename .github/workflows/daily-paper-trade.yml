@@ -6,6 +6,8 @@ name: Daily paper trade
 on:
   schedule:
     - cron: "20 11 * * 1-5"   # 17:05 Nepal time (UTC+5:45), Monday to Friday
+    - cron: "50 13 * * 1-5"   # 19:35 backup: GitHub sometimes drops scheduled runs; a second run on the same day
+                              # finds nothing new and publishes nothing
     - cron: "35 1 1 * *"      # 07:20 Nepal time on the 1st: also refresh company reports and ShareSansar lists
   workflow_dispatch:
     inputs:
